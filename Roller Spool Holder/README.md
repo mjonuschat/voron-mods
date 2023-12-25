@@ -51,4 +51,4 @@ Insert the assembled roller drum into the mounted cage.
 
 ## License
 
-This work is licensed under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
+This work is licensed under the GNU General Public License v3.0, for more details check the [LICENSE](./LICENSE).
