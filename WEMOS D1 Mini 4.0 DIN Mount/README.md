@@ -53,4 +53,4 @@ All parts should be oriented correctly to print without supports.
 
 ## License
 
-This work is licensed under the GNU General Public License v3.0, for more details check the [LICENSE](./LICENSE).
+This work is licensed under the GNU General Public License v3.0.

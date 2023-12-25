@@ -48,5 +48,4 @@ the connectors.
 
 ## License
 
-This remix is - identical to the original work - licensed under the GNU General
-Public License v3.0, for more details check the [LICENSE](./LICENSE).
+This work is licensed under the GNU General Public License v3.0.
