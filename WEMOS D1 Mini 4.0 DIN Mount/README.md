@@ -2,7 +2,7 @@
 
 A DIN Rail mount for a WEMOS D1 Mini 4.0 that includes a mount for a 4-channel level shifter to properly drive Neopixel LED strips.
 
-![2](./Images/img00002.jpeg)
+![2](./Images/img00002.jpg)
 
 ## Summary
 
@@ -44,8 +44,8 @@ All parts should be oriented correctly to print without supports.
 
 ## Images
 
-![1](./Images/img00001.jpeg)
-![3](./Images/img00003.jpeg)
+![1](./Images/img00001.jpg)
+![3](./Images/img00003.jpg)
 
 ## Model origin
 
