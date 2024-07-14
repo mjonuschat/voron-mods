@@ -16,22 +16,21 @@
 #   identifier = "lorem"
 #   url = "/docs/lorem/"
 
-[[guide]]
-  name = "Lorem"
-  weight = 10
-  identifier = "lorem"
-  url = "/guide/lorem/"
+# [[guide]]
+#   name = "Lorem"
+#   weight = 10
+#   identifier = "lorem"
+#   url = "/guide/lorem/"
 
-[[tutorial]]
-  name = "Lorem"
-  weight = 10
-  identifier = "lorem"
-  url = "/tutorial/lorem/"
+# [[tutorial]]
+#   name = "Lorem"
+#   weight = 10
+#   identifier = "lorem"
+#   url = "/tutorial/lorem/"
 
 [[main]]
   name = "Docs"
-  url = "/docs/guides/moonraker-sensors/"
-# url = "/docs/1.0/prologue/introduction/"
+  url = "/docs/guides/"
   weight = 10
 
 # [[social]]
@@ -68,10 +67,10 @@
 #   pageRef = "/docs/resources"
 #   weight = 30
 
-[[footer]]
-  name = "Privacy Policy"
-  url = "/privacy/"
-  weight = 10
+# [[footer]]
+#   name = "Privacy Policy"
+#   url = "/privacy/"
+#   weight = 10
 
 # [[footer]]
 #   name = "Terms of Service"
