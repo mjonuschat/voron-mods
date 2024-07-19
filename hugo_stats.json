@@ -147,6 +147,7 @@
       "list-nested",
       "list-unstyled",
       "list-view",
+      "m-2",
       "mb-0",
       "mb-3",
       "mb-4",
@@ -262,8 +263,10 @@
       "offcanvasNavMainLabel",
       "offcanvasNavSection",
       "offcanvasNavSectionLabel",
+      "optional-tuning-parameters",
       "power-meter",
       "prerequisites",
+      "quad_gantry_level-voron-24",
       "query",
       "search-form",
       "searchModal",
@@ -273,7 +276,8 @@
       "searchToggleMobile",
       "sensor-configuration",
       "socialMenu",
-      "toc"
+      "toc",
+      "z_tilt_adjust-voron-trident"
     ]
   }
 }
