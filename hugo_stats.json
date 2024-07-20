@@ -67,6 +67,7 @@
       "callout-danger",
       "callout-icon",
       "callout-note",
+      "callout-tip",
       "callout-title",
       "card",
       "card-body",
@@ -193,6 +194,7 @@
       "order-lg-4",
       "outline/alert-triangle",
       "outline/info-circle",
+      "outline/rocket",
       "p-0",
       "p-2",
       "page-footer-meta",
@@ -248,6 +250,7 @@
       "TableOfContents",
       "configuration",
       "configuration-1",
+      "configuring-filament-settings-in-your-slicer",
       "doks-docs-nav",
       "further-reading",
       "h-rh-i-0",
@@ -256,6 +259,7 @@
       "historical-data",
       "installation",
       "introduction",
+      "modifying-the-print_end-macro",
       "moonraker",
       "mqtt-configuration",
       "mqtt-server",
@@ -276,7 +280,10 @@
       "searchToggleMobile",
       "sensor-configuration",
       "socialMenu",
+      "step-1-access-custom-g-code",
+      "step-2-add-start-g-code",
       "toc",
+      "verification-process",
       "z_tilt_adjust-voron-trident"
     ]
   }
