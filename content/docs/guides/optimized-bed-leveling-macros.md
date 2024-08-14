@@ -39,7 +39,7 @@ These macros are not compatible with dockable probes, as they override the defau
 
 This macro renames and extends the existing QUAD_GANTRY_LEVEL command, implementing the two-pass leveling process. By replacing the default functionality, no additional modifications to the configuration are required. The macro executes the following steps:
 
-Pass 1: Initial Coarse Leveling - Lifts the head to 10mm. 
+Pass 1: Initial Coarse Leveling - Lifts the head to 10mm  
 Pass 2: Fine Leveling - Lifts the head to 2mm  
 
 ```ini {title="printer.cfg"}
