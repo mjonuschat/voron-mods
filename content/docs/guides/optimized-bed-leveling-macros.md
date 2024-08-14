@@ -39,8 +39,8 @@ These macros are not compatible with dockable probes, as they override the defau
 
 This macro renames and extends the existing QUAD_GANTRY_LEVEL command, implementing the two-pass leveling process. By replacing the default functionality, no additional modifications to the configuration are required. The macro executes the following steps:
 
-Pass 1: Initial Coarse Leveling - Lifts the head to 10mm
-Pass 2: Fine Leveling - Lifts the head to 2mm
+Pass 1: Initial Coarse Leveling - Lifts the head to 10mm. 
+Pass 2: Fine Leveling - Lifts the head to 2mm  
 
 ```ini {title="printer.cfg"}
 [gcode_macro QUAD_GANTRY_LEVEL]
@@ -55,6 +55,9 @@ gcode:
 ## Z_TILT_ADJUST (Voron Trident)
 
 This macro renames and extends the existing Z_TILT_ADJUST command, implementing the two-pass leveling process. By replacing the default functionality, no additional modifications to the configuration are required. The macro executes the following steps:
+
+Pass 1: Initial Coarse Leveling - Moves bed down by 10mm  
+Pass 2: Fine Leveling - Moves bed down by 2mm  
 
 ```ini {title="printer.cfg"}
 [gcode_macro Z_TILT_ADJUST]
@@ -76,3 +79,4 @@ The following parameters in the macros can be adjusted to futher optimize the le
 
 - **HORIZONTAL_MOVE_Z**: Specifies the intermediate move height (in mm) between probes
 - **RETRY_TOLERANCE**: Defines the maximum allowable deviation between the largest and smallest probed points, triggering retry leveling if exceeded
+- **SAMPLES**: Specifies the number of probe samples to use per leveling point
