@@ -139,7 +139,19 @@ template: splash
 Placeholder — replaced with the real homepage in Task 4.
 ```
 
-- [ ] **Step 7: Build and verify**
+- [ ] **Step 7: Create the (initially empty) guides directory the sidebar config references**
+
+Create `src/content/docs/docs/guides/index.md` now, rather than in Task 5 where it'd otherwise land — the sidebar config above (Step 3) references `docs/guides` via `autogenerate` before any file exists there:
+
+```markdown
+---
+title: "Guides"
+---
+```
+
+Traced Starlight's actual autogenerate logic (`packages/starlight/utils/navigation.ts`) to check whether this matters: `entriesFromAutogenerateConfig` filters the content collection's already-resolved route list for paths under the configured directory — there's no filesystem existence check, so an empty or missing directory should just produce an empty sidebar group, not a build error. This step is a low-cost preventive measure rather than a confirmed-necessary fix; it removes any doubt for the cost of creating one stub file slightly earlier than originally planned. Task 5 no longer creates this file (moved here).
+
+- [ ] **Step 8: Build and verify**
 
 Run:
 
@@ -147,12 +159,12 @@ Run:
 npm run build
 ```
 
-Expected: exits 0, `dist/index.html` exists.
+Expected: exits 0, `dist/index.html` and `dist/docs/guides/index.html` both exist.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add package.json package-lock.json astro.config.mjs src/content.config.ts tsconfig.json src/content/docs/index.md
+git add package.json package-lock.json astro.config.mjs src/content.config.ts tsconfig.json src/content/docs/index.md src/content/docs/docs/guides/index.md
 git commit -m "[TASK] Scaffold Astro/Starlight, remove Hugo from package.json"
 ```
 
@@ -215,7 +227,18 @@ git commit -m "[TASK] Apply --sl-content-width fix"
 - Modify: `.gitignore`
 - Modify: `astro.config.mjs`
 
-- [ ] **Step 1: Move the branding assets to public/**
+- [ ] **Step 1: Clean out the stale Hugo build output already sitting in public/**
+
+`public/` currently exists on disk as leftover Hugo build output from a previous local `npm run build` — 77 files including a stale `favicon.ico`/`favicon.svg` at the exact destination paths Step 2 is about to `git mv` into. None of it is tracked in git (confirm with `git ls-files public/` — expect zero output), so it's safe to wipe entirely:
+
+```bash
+git ls-files public/
+git clean -fdX public/
+```
+
+Expected: the `git ls-files` command prints nothing (confirming nothing under `public/` is tracked, so cleaning it is non-destructive to git history). `git clean -fdX` removes only gitignored files/directories, which right now is everything under `public/` — it must run before Step 3 removes the gitignore rule, otherwise `-X` won't match anything anymore.
+
+- [ ] **Step 2: Move the branding assets to public/**
 
 ```bash
 mkdir -p public
@@ -226,7 +249,7 @@ git mv assets/mask-icon.svg public/mask-icon.svg
 git mv assets/cover.png public/cover.png
 ```
 
-- [ ] **Step 2: Remove the stale public/ gitignore rule**
+- [ ] **Step 3: Remove the stale public/ gitignore rule**
 
 In `.gitignore`, find this block near the end of the file:
 
@@ -237,7 +260,7 @@ public/
 
 Delete both lines. This rule existed because Hugo's build output landed in `public/`; Astro's build output is `dist/`, and Astro's `public/` is a source directory that should be tracked normally.
 
-- [ ] **Step 3: Add head tags for the mask-icon and social-preview image**
+- [ ] **Step 4: Add head tags for the mask-icon and social-preview image**
 
 In `astro.config.mjs`, add a `head` array to the `starlight()` call:
 
@@ -255,7 +278,7 @@ In `astro.config.mjs`, add a `head` array to the `starlight()` call:
       head: [
         {
           tag: 'link',
-          attrs: { rel: 'mask-icon', href: '/mask-icon.svg', color: 'white' },
+          attrs: { rel: 'mask-icon', href: 'https://mjonuschat.github.io/voron-mods/mask-icon.svg', color: 'white' },
         },
         {
           tag: 'meta',
@@ -269,22 +292,23 @@ In `astro.config.mjs`, add a `head` array to the `starlight()` call:
     }),
 ```
 
-The `og:image`/`twitter:image` URLs are hardcoded absolute URLs, not base-aware — this is a deliberate simplification. `astro.config.mjs` is evaluated before the `--site`/`--base` CLI flags are known, so there's no clean way to compute this dynamically from within the static `head` array. If the GitHub org/repo ever changes, this needs a manual update. Unlike the image/Card-href base-path bugs, getting this wrong only produces a stale social-preview image, not a broken in-page link — acceptable risk for a single-deployment-target hobby site. The `mask-icon` href is genuinely root-relative and resolves correctly without a base prefix because Safari resolves `<link>` tags against the final served page URL, same as the browser would for any other same-origin resource referenced this way *only when paired with a correct `<base>` tag* — Astro injects this automatically when `base` is configured, which is what makes this one safe to leave root-relative while the Markdown image references are not (Markdown images aren't run through that same head/document base-tag resolution the way `<link>`/`<meta>` tags in `<head>` are).
+All three of these (`mask-icon`, `og:image`, `twitter:image`) are hardcoded absolute URLs, not base-aware — this is a deliberate simplification, and it matters why. Checked Starlight's source (`packages/starlight/utils/head.ts`) to confirm: the native `favicon` option (set above, `favicon: '/favicon.svg'`) is base-prefixed automatically — Starlight runs it through an internal `fileWithBase()` helper specifically for this reason. But that helper only applies to Starlight's own `favicon` option; arbitrary entries added through `head` are merged in literally, with no base-prefixing applied (confirmed in the same file — user-supplied `head` entries go straight through `mergeHead()`, no `fileWithBase()` call). So `favicon: '/favicon.svg'` is correct as a root-relative path, but anything in this `head` array needs to either be absolute or computed some other way. `astro.config.mjs` is evaluated before the `--site`/`--base` CLI flags are resolved, so there's no clean way to compute the base dynamically from within this static array — hardcoding the known production URL is the pragmatic choice. If the GitHub org/repo ever changes, this needs a manual update; getting it wrong only produces a stale icon/social-preview image, not a broken in-page link, which is why this is an acceptable simplification here in a way it wouldn't be for the homepage's actual guide links (Task 4).
 
-- [ ] **Step 4: Build and verify**
+- [ ] **Step 5: Build and verify**
 
 Run:
 
 ```bash
 npm run build
 ls dist/favicon.svg dist/favicon.ico dist/favicon.png dist/mask-icon.svg dist/cover.png
+grep -o '<link rel="shortcut icon"[^>]*>' dist/index.html
 grep -o '<link rel="mask-icon"[^>]*>' dist/index.html
 grep -o '<meta property="og:image"[^>]*>' dist/index.html
 ```
 
-Expected: all five files exist in `dist/`, and both grep commands find their respective tags.
+Expected: all five files exist in `dist/`, the `shortcut icon` link (Starlight's native favicon rendering) has an `href` starting with `/favicon.svg` (root-relative is correct here, with no base flag passed in this build), and the other two grep commands find their respective tags with the full hardcoded `https://mjonuschat.github.io/voron-mods/...` URLs.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add -A public/ .gitignore astro.config.mjs
@@ -315,28 +339,24 @@ template: splash
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
+const base = import.meta.env.BASE_URL;
+
 A collection of guides & tutorials for Voron 3D Printers
 
 <CardGrid>
-	<Card title="Energy Usage Tracking" icon="rocket">
+	<Card title="Energy Usage Tracking" icon="rocket" href={`${base}docs/guides/energy-usage-monitoring/`}>
 		Step-by-step tutorial to integrate a network-connected power meter with Moonraker, enabling real-time energy consumption monitoring and historical data tracking.
-
-		[Read the guide](/docs/guides/energy-usage-monitoring/)
 	</Card>
-	<Card title="Optimized Bed Leveling Macros" icon="rocket">
+	<Card title="Optimized Bed Leveling Macros" icon="rocket" href={`${base}docs/guides/optimized-bed-leveling-macros/`}>
 		Guide to implementing a two-pass bed leveling approach, consisting of an initial coarse leveling pass for safety and speed, followed by a fine leveling pass for precise accuracy.
-
-		[Read the guide](/docs/guides/optimized-bed-leveling-macros/)
 	</Card>
-	<Card title="Automating Z Offset Adjustments" icon="rocket">
+	<Card title="Automating Z Offset Adjustments" icon="rocket" href={`${base}docs/guides/automatic-z-offset-adjustments/`}>
 		Detailed step-by-step instructions to configure Z offset adjustments for each filament type in your Slicer software, suitable for all Klipper enabled printers.
-
-		[Read the guide](/docs/guides/automatic-z-offset-adjustments/)
 	</Card>
 </CardGrid>
 ```
 
-This uses a plain Markdown link (`[Read the guide](/docs/guides/...)`) inside the `Card`, rather than a `Card href` prop. Starlight resolves links written this way (and image paths) through its own router, which is base-aware — this sidesteps the `Card`'s `href` prop entirely along with the `import.meta.env.BASE_URL` JS-expression workaround floated in the original spec, and is simpler. Verify this resolves correctly under `/voron-mods` in Task 11; if it doesn't, fall back to `href={`${import.meta.env.BASE_URL}docs/guides/energy-usage-monitoring/`}` on the `Card` itself instead of a body link.
+The `href` on each `Card` is a JS expression building the URL from `import.meta.env.BASE_URL`, not a literal string. This is the only correct option for a link like this written directly in content — a plain Markdown link (`[text](/docs/guides/...)`) would have the exact same problem as the images: it's a literal string emitted as-is into the `<a href>`, with no base-prefixing applied by anything in Astro's pipeline. There's no Starlight mechanism that makes hardcoded absolute paths in Markdown/MDX body content base-aware; only assets processed through `astro:assets` (Task 7-8's images) and Starlight's own first-party config options (the `favicon` option in Task 3) get that treatment automatically. Verify the actual rendered `href` values in Task 11.
 
 - [ ] **Step 2: Delete the old Hugo homepage files**
 
@@ -364,16 +384,15 @@ git rm -r --cached content/_index.md layouts/index.html 2>/dev/null || true
 git commit -m "[TASK] Migrate homepage to Starlight Card/CardGrid"
 ```
 
-## Task 5: Migrate the docs index, guides index, resources, and privacy pages
+## Task 5: Migrate the docs index, resources, and privacy pages
 
 **Files:**
 - Create: `src/content/docs/docs/index.md`
-- Create: `src/content/docs/docs/guides/index.md`
 - Create: `src/content/docs/docs/resources.md`
 - Create: `src/content/docs/privacy.md`
 - Delete: `content/docs/_index.md`, `content/docs/guides/_index.md`, `content/docs/resources.md`, `content/privacy.md`
 
-All four source pages are stubs (front matter only, little or no body) — ported as-is.
+All four source pages are stubs (front matter only, little or no body) — ported as-is. The guides index (`src/content/docs/docs/guides/index.md`) was already created back in Task 1, since the sidebar's `autogenerate` config needed that directory to exist from the very first build — only its old Hugo source file still needs deleting here.
 
 - [ ] **Step 1: Create the docs index**
 
@@ -385,17 +404,7 @@ title: "Docs"
 ---
 ```
 
-- [ ] **Step 2: Create the guides index**
-
-Create `src/content/docs/docs/guides/index.md`:
-
-```markdown
----
-title: "Guides"
----
-```
-
-- [ ] **Step 3: Create the resources page**
+- [ ] **Step 2: Create the resources page**
 
 Create `src/content/docs/docs/resources.md`:
 
@@ -407,7 +416,7 @@ title: "Resources"
 Link to valuable, relevant resources.
 ```
 
-- [ ] **Step 4: Create the privacy page**
+- [ ] **Step 3: Create the privacy page**
 
 Note: this page lives directly under `src/content/docs/`, not nested under `docs/docs/`, because Hugo's `/docs/...` permalink rule only applies to content typed `docs`; `privacy.md` is typed `legal` and is already at root `/privacy/` today.
 
@@ -419,13 +428,13 @@ title: "Privacy Policy"
 ---
 ```
 
-- [ ] **Step 5: Delete the old Hugo source files**
+- [ ] **Step 4: Delete the old Hugo source files**
 
 ```bash
 git rm content/docs/_index.md content/docs/guides/_index.md content/docs/resources.md content/privacy.md
 ```
 
-- [ ] **Step 6: Build and verify**
+- [ ] **Step 5: Build and verify**
 
 Run:
 
@@ -436,11 +445,11 @@ ls dist/docs/index.html dist/docs/guides/index.html dist/docs/resources/index.ht
 
 Expected: build exits 0, all four files exist at the listed paths (confirming the nested `docs/docs/...` URL structure produces `/docs/...` URLs, and `privacy.md` produces `/privacy/` without nesting).
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add -A src/content/docs/docs/ src/content/docs/privacy.md
-git commit -m "[TASK] Migrate docs index, guides index, resources, and privacy pages"
+git commit -m "[TASK] Migrate docs index, resources, and privacy pages"
 ```
 
 ## Task 6: Migrate the Optimized Bed Leveling Macros guide
@@ -1139,11 +1148,11 @@ git commit -m "[TASK] Rewrite deploy workflow for Astro/Starlight"
 ## Task 10: Remove remaining Hugo/Doks files
 
 **Files:**
-- Delete: `config/`, `netlify.toml`, `hugo_stats.json`, `.hugo_build.lock`, `resources/`, `layouts/`, `assets/scss/`, `assets/jsconfig.json`, `content/` (if anything remains), `assets/` (if empty)
+- Delete: `config/`, `netlify.toml`, `hugo_stats.json`, `.hugo_build.lock`, `resources/`, `layouts/`, `assets/scss/`, `assets/jsconfig.json`, `assets/js/custom.js`, `assets/images/.gitkeep`, `assets/svgs/.gitkeep`, `content/` (if anything remains), `assets/` (if empty)
 
 By this point every piece of content, branding, and configuration this repo actually used has already moved to its Astro/Starlight equivalent in Tasks 1-9. This task is pure deletion — confirm nothing unexpected remains before removing.
 
-- [ ] **Step 1: Confirm content/ and assets/ are fully migrated**
+- [ ] **Step 1: Confirm content/ is fully migrated and list what's left in assets/**
 
 Run:
 
@@ -1152,14 +1161,17 @@ find content -type f
 find assets -type f
 ```
 
-Expected: `content/` finds nothing (every file was removed in Tasks 4-8). `assets/` finds nothing either (favicon/branding moved in Task 3, images moved in Tasks 7-8, scss/jsconfig.json are about to be removed below). If either command finds an unexpected file, stop and figure out what it is before continuing — don't delete something this plan didn't account for.
+Expected: `content/` finds nothing (every file was removed in Tasks 4-8). `assets/` finds exactly five remaining files: `assets/scss/common/_custom.scss`, `assets/scss/common/_variables-custom.scss`, `assets/jsconfig.json`, `assets/js/custom.js`, `assets/images/.gitkeep`, `assets/svgs/.gitkeep` — all confirmed-empty Doks placeholders, none of them migrated anywhere because none had real content. If `find assets` shows anything else, stop and figure out what it is before continuing — don't delete something this plan didn't account for.
 
 - [ ] **Step 2: Remove the remaining Hugo/Doks files and directories**
 
 ```bash
-git rm -r config/ netlify.toml hugo_stats.json .hugo_build.lock resources/ layouts/ assets/scss/ assets/jsconfig.json
+git rm -r config/ netlify.toml hugo_stats.json .hugo_build.lock resources/ layouts/ assets/scss/ assets/jsconfig.json assets/js/custom.js assets/images/.gitkeep assets/svgs/.gitkeep
+rmdir assets/js assets/images assets/svgs 2>/dev/null || true
 rmdir content assets 2>/dev/null || true
 ```
+
+`git rm` on individual files (the three `.gitkeep`/`custom.js` removals) doesn't clean up their now-empty parent directories the way `git rm -r` on a whole directory does — without the extra `rmdir` calls for `assets/js`, `assets/images`, `assets/svgs`, the final `rmdir assets` would fail since those three empty directories would still be sitting inside it.
 
 - [ ] **Step 3: Build and verify nothing broke**
 
@@ -1207,16 +1219,16 @@ Expected: every matched `src` starts with `/voron-mods/_astro/` (confirming `ast
 grep -o 'href="[^"]*docs/guides[^"]*"' dist/index.html
 ```
 
-Expected: every matched `href` starts with `/voron-mods/docs/guides/...`. If any link is missing the `/voron-mods` prefix, the body-link approach used in Task 4 didn't resolve through Starlight's base-aware router as expected — switch that specific `Card` to the `href={`${import.meta.env.BASE_URL}docs/guides/...`}` JS-expression form noted in Task 4 Step 1, rebuild, and re-check.
+Expected: every matched `href` starts with `/voron-mods/docs/guides/...`. If any link is missing the `/voron-mods` prefix, double-check Task 4's `Card` `href` expressions actually use `import.meta.env.BASE_URL` as written and weren't accidentally hardcoded as literal strings during implementation.
 
-- [ ] **Step 4: Verify favicon and mask-icon links are base-prefixed**
+- [ ] **Step 4: Verify the favicon link is base-prefixed, and the mask-icon link is the correct hardcoded absolute URL**
 
 ```bash
-grep -o '<link rel="icon"[^>]*>' dist/index.html
+grep -o '<link rel="shortcut icon"[^>]*>' dist/index.html
 grep -o '<link rel="mask-icon"[^>]*>' dist/index.html
 ```
 
-Expected: both hrefs start with `/voron-mods/`.
+Expected: the favicon `href` starts with `/voron-mods/favicon.svg` (Starlight's native `favicon` option is base-aware, confirmed via its source in Task 3 — this build's `--base /voron-mods` flag should now show up here, unlike the un-flagged builds in every earlier task). The mask-icon `href` is the unchanged hardcoded `https://mjonuschat.github.io/voron-mods/mask-icon.svg` — it doesn't respond to the `--base` flag at all, by design (see Task 3 Step 4), so this check is really just confirming the literal string is still there, not that base-prefixing happened.
 
 - [ ] **Step 5: Verify URL structure matches the current site exactly**
 
