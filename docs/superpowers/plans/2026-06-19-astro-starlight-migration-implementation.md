@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Production base path is `/voron-mods` (GitHub Pages project site at `mjonuschat/voron-mods`, full origin `https://mjonuschat.github.io`). Any link or image reference written as a literal string in Markdown/MDX/config (e.g. `/images/foo.png`, `href="/guides/foo"`) will silently 404 in production — Astro only base-prefixes assets it processes itself (`astro:assets`, bundled CSS/JS) or values read from `import.meta.env.BASE_URL` at runtime. Never write a literal root-relative path in content; use relative paths for images and `import.meta.env.BASE_URL` for any hardcoded link in MDX.
+- Production base path is `/voron-mods` (GitHub Pages project site at `mjonuschat/voron-mods`, full origin `https://mjonuschat.github.io`). Any link or image reference written as a literal string in Markdown/MDX/config (e.g. `/images/foo.png`, `href="/guides/foo"`) will silently 404 in production — Astro only base-prefixes assets it processes itself (`astro:assets`, bundled CSS/JS) or values read from `import.meta.env.BASE_URL` at runtime. Never write a literal root-relative path in content; use relative paths for images and `import.meta.env.BASE_URL` for any hardcoded link in MDX. `BASE_URL` is not guaranteed to have a trailing slash (it mirrors whatever `--base` was passed, untouched, under the default `trailingSlash: 'ignore'`) — strip any trailing slash and supply the `/` separator explicitly when concatenating a path onto it.
 - Guide/docs URLs must stay byte-identical to today: `/docs/guides/<slug>`, `/docs/guides`, `/docs`, `/docs/resources`, `/privacy`, `/`. No redirects.
 - Guides and all stub pages stay `.md`. Only the homepage (`src/content/docs/index.mdx`) is `.mdx`, because it's the only page using a component (`Card`/`CardGrid`).
 - Callout type names map 1:1: `note`, `tip`, `caution`, `danger`. The Doks `icon="outline/..."` parameter is dropped; Starlight's default icon per type is used instead.
@@ -353,24 +353,26 @@ template: splash
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 A collection of guides & tutorials for Voron 3D Printers
 
 <CardGrid>
-	<Card title="Energy Usage Tracking" icon="rocket" href={`${base}docs/guides/energy-usage-monitoring/`}>
+	<Card title="Energy Usage Tracking" icon="rocket" href={`${base}/docs/guides/energy-usage-monitoring/`}>
 		Step-by-step tutorial to integrate a network-connected power meter with Moonraker, enabling real-time energy consumption monitoring and historical data tracking.
 	</Card>
-	<Card title="Optimized Bed Leveling Macros" icon="rocket" href={`${base}docs/guides/optimized-bed-leveling-macros/`}>
+	<Card title="Optimized Bed Leveling Macros" icon="rocket" href={`${base}/docs/guides/optimized-bed-leveling-macros/`}>
 		Guide to implementing a two-pass bed leveling approach, consisting of an initial coarse leveling pass for safety and speed, followed by a fine leveling pass for precise accuracy.
 	</Card>
-	<Card title="Automating Z Offset Adjustments" icon="rocket" href={`${base}docs/guides/automatic-z-offset-adjustments/`}>
+	<Card title="Automating Z Offset Adjustments" icon="rocket" href={`${base}/docs/guides/automatic-z-offset-adjustments/`}>
 		Detailed step-by-step instructions to configure Z offset adjustments for each filament type in your Slicer software, suitable for all Klipper enabled printers.
 	</Card>
 </CardGrid>
 ```
 
-The `href` on each `Card` is a JS expression building the URL from `import.meta.env.BASE_URL`, not a literal string. This is the only correct option for a link like this written directly in content — a plain Markdown link (`[text](/docs/guides/...)`) would have the exact same problem as the images: it's a literal string emitted as-is into the `<a href>`, with no base-prefixing applied by anything in Astro's pipeline. There's no Starlight mechanism that makes hardcoded absolute paths in Markdown/MDX body content base-aware; only assets processed through `astro:assets` (Task 7-8's images) and Starlight's own first-party config options (the `favicon` option in Task 3) get that treatment automatically. Verify the actual rendered `href` values in Task 11.
+The `href` on each `Card` is a JS expression building the URL from `import.meta.env.BASE_URL`, not a literal string. This is the only correct option for a link like this written directly in content — a plain Markdown link (`[text](/docs/guides/...)`) would have the exact same problem as the images: it's a literal string emitted as-is into the `<a href>`, with no base-prefixing applied by anything in Astro's pipeline. There's no Starlight mechanism that makes hardcoded absolute paths in Markdown/MDX body content base-aware; only assets processed through `astro:assets` (Task 7-8's images) and Starlight's own first-party config options (the `favicon` option in Task 3) get that treatment automatically.
+
+`BASE_URL`'s trailing slash isn't guaranteed — Astro's config schema (`packages/astro/src/core/config/schemas/relative.ts`) only force-adds or force-strips a trailing slash on `base` when `trailingSlash` is explicitly `'always'` or `'never'`; the default `'ignore'` (unset here) leaves `base` exactly as passed to `--base` on the CLI. Since Task 9's build command passes `--base "/voron-mods"` with no trailing slash, plain `${base}docs/...` concatenation would silently produce `/voron-modsdocs/...`. Stripping any trailing slash from `base` and hardcoding the `/` separator in the template literal makes this correct regardless of `trailingSlash`'s value. Verify the actual rendered `href` values in Task 11.
 
 - [ ] **Step 2: Delete the old Hugo homepage files**
 
