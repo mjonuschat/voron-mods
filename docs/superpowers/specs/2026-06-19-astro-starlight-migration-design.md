@@ -31,6 +31,8 @@ Both are real and currently maintained, not abandoned. Neither was picked — go
 
 **Drop the blog/categories/contributors taxonomies** that ship with the Doks theme. Verified zero content uses them: no blog posts, no contributors data file. Starlight has no built-in blog equivalent, so keeping this capability "for later" would mean standing up a custom blog integration for a feature with no current content and no stated need.
 
+**Page inventory** (whole site, confirmed against the current `content/` tree): `content/_index.md` (homepage), `content/docs/_index.md`, `content/docs/guides/_index.md`, `content/docs/resources.md`, `content/privacy.md`, and the three guides under `content/docs/guides/`.
+
 **Not in scope for this pass:** the go2rtc camera-streaming guide (`docs/superpowers/plans/2026-06-19-go2rtc-guide-implementation.md`) is still a plan, not yet landed in `content/`. If it merges before this migration executes, it needs the same content-mapping rules applied (see below) either as part of this migration or as a fast-follow; this spec doesn't block on it landing first.
 
 ## Project Structure
@@ -117,7 +119,26 @@ becomes
 
 Starlight ships Expressive Code by default, which supports this `title="..."` meta-string syntax natively.
 
-**File format:** all content stays `.md`. No MDX migration needed for anything covered by this spec.
+**Disclosure blocks (`details` shortcode):** used twice, both nested inside a `callout` (`automatic-z-offset-adjustments.md:45`, `energy-usage-monitoring.md:194`):
+
+```text
+{{< details "Macro: PRINT_END" >}}
+...
+{{< /details >}}
+```
+becomes plain HTML, which nests fine inside a `:::` aside directive:
+```html
+<details>
+<summary>Macro: PRINT_END</summary>
+
+...
+
+</details>
+```
+
+**Images:** the existing guides reference 5 PNGs via Hugo's asset pipeline, sourced from `assets/images/guides/{automatic-z-offset-ajustments,energy-usage-monitoring}/*.png` (note: the source folder name has a pre-existing typo, "ajustments" — left as-is unless a cleanup is wanted separately). Move these files to `public/images/guides/...` (Astro's static-asset dir, copied as-is), and rewrite the Markdown references from the relative `images/guides/...` path Hugo resolved through its asset pipeline to the root-absolute `/images/guides/...` path Astro serves `public/` from.
+
+**File format:** guide/docs content stays `.md`. The homepage becomes `.mdx` (see Homepage, below) to use Starlight's `Card`/`CardGrid` components — that's the only page in this migration that needs MDX.
 
 **Numbered steps:** Hugo's repeated `1.` auto-increment convention is plain CommonMark behavior — unchanged in any Markdown renderer, no migration needed.
 
@@ -128,16 +149,43 @@ Starlight ships Expressive Code by default, which supports this `title="..."` me
 ```js
 starlight({
   sidebar: [
-    { label: 'Guides', autogenerate: { directory: 'guides' } },
+    { label: 'Guides', items: [{ autogenerate: { directory: 'guides' } }] },
   ],
 })
 ```
 
 Sort order is alphabetical by filename — Starlight's autogenerate has no built-in date-based or custom sort. Confirmed acceptable: current guide ordering doesn't need to be preserved exactly, alphabetical-by-filename is fine.
 
+## URL Structure & Redirects
+
+Starlight routes directly from `src/content/docs/`: a file at `src/content/docs/guides/foo.md` becomes `/guides/foo`, not `/docs/guides/foo`. Hugo's current permalink config (`config/_default/hugo.toml:59`) explicitly puts guides under `/docs/guides/...`. This migration changes those URLs.
+
+Decision: accept the new `/guides/...` URLs (simpler source tree than nesting a redundant `docs` folder inside `src/content/docs/`), and add redirects from the old paths using Astro's `redirects` config in `astro.config.mjs` (this is core Astro, not Starlight-specific):
+
+```js
+export default defineConfig({
+  redirects: {
+    '/docs/guides/[...slug]': '/guides/[...slug]',
+    '/docs/resources': '/resources',
+    '/docs': '/',
+  },
+  // ...
+});
+```
+
+Caveat: GitHub Pages is static hosting with no server, so Astro compiles these to `<meta http-equiv="refresh">` redirect pages, not true HTTP 301s. That's transparent for anyone following an old bookmark or link (the browser follows it immediately), but it's a weaker signal for search engines than a real 301. Acceptable for this site; worth knowing rather than assuming it's identical to a server-side redirect.
+
 ## Homepage
 
-Current `content/_index.md` is a stub: title ("Voron Guides") and a one-line tagline, no body content. Maps directly onto Starlight's `template: splash` frontmatter (hero title + tagline + actions, no sidebar) — there's very little to actually port.
+`content/_index.md` itself is a stub (title "Voron Guides", one-line tagline, no body) — but the actual rendered homepage also includes a features section that's *not* in the content file at all. It's hardcoded in a Hugo layout override, `layouts/index.html`, as three cards (title, description, link) pointing at each guide:
+
+- Energy Usage Tracking → Energy Usage Monitoring & Tracking guide
+- Optimized Bed Leveling Macros guide
+- Automating Z Offset Adjustments guide
+
+(A fourth section in that same layout file, a "Start building with Doks today" CTA, is gated behind `sectionFooter = false` in `config/_default/params.toml` and never actually renders — that one's dead code, not migrated.)
+
+Decision: keep the feature cards, using Starlight's built-in `Card`/`CardGrid` components, which exist for exactly this pattern. The homepage becomes `src/content/docs/index.mdx` (Starlight's standard homepage location — content directly in the `docs` root maps to `/`) instead of `.md`, since `Card`/`CardGrid` are components that need MDX. The page still uses `template: splash` frontmatter for the hero title/tagline; the `CardGrid` of three `Card`s replaces the hardcoded HTML from `layouts/index.html`.
 
 ## Build & Deploy
 
@@ -145,8 +193,16 @@ Rewrite `.github/workflows/deploy.yml`:
 - Remove the Hugo CLI install step entirely.
 - Remove the Dart Sass `snap install` step entirely (not needed by Astro's build).
 - Keep `actions/checkout`, `actions/setup-node`, `actions/configure-pages`.
-- Keep the `npm run build` invocation — the script itself changes to run `astro build`, the workflow step doesn't need to change.
 - Change `actions/upload-pages-artifact`'s `path` from `./public` to `./dist` (Astro's default build output directory).
+- The build step's arguments need to change, not just the underlying script. The current workflow passes `npm run build -- --baseURL "${{ steps.pages.outputs.base_url }}/"`, which only makes sense for Hugo — Astro's CLI has no `--baseURL` flag. Astro's equivalents are `--site` and `--base`, and `actions/configure-pages` already provides the right source values as separate outputs (`origin`, e.g. `https://octocat.github.io`, and `base_path`, e.g. `/repo-name`):
+
+```yaml
+run: |
+  npm run build \
+    -- \
+    --site "${{ steps.pages.outputs.origin }}" \
+    --base "${{ steps.pages.outputs.base_path }}"
+```
 
 `netlify.toml` is deleted (see Project Structure).
 
@@ -159,11 +215,15 @@ Plan: branch from `gh-pages`, do the migration as a sequence of commits (scaffol
 ## Verification
 
 - `npm run build` (now `astro build` under the hood) exits 0.
-- Each migrated page renders: homepage splash, docs index, resources, privacy, and all three guides.
+- Each migrated page renders: homepage splash, docs index, guides index, resources, privacy, and all three guides.
 - Callouts render with the correct type/styling for all four variants used across the existing content.
+- Disclosure blocks (the converted `details` shortcode) render and expand/collapse correctly in both locations they're used.
+- All 5 images render at their new `/images/guides/...` paths.
 - Code blocks render with their `title="..."` labels intact.
 - Sidebar shows all docs/guides pages, alphabetically ordered.
 - `--sl-content-width` fix is visibly wider than Starlight's 45rem default on a large viewport, with no ToC overflow.
+- Homepage renders the hero (title/tagline) and all three feature cards via `CardGrid`/`Card`, linking to the correct guides.
+- Visiting an old `/docs/guides/...` URL redirects to the new `/guides/...` path.
 - GitHub Pages deploy workflow runs green end-to-end on the feature branch (via `workflow_dispatch` or a temporary branch trigger) before the squash-merge into `gh-pages`.
 
 ## Out of Scope
@@ -179,8 +239,12 @@ Plan: branch from `gh-pages`, do the migration as a sequence of commits (scaffol
 
 - Site builds via `npm run build` with Astro/Starlight, no Hugo toolchain involved.
 - `.github/workflows/deploy.yml` no longer installs Hugo or Dart Sass, and uploads `./dist`.
-- All current content (homepage, docs index, resources, privacy, 3 guides) is present and renders correctly under Astro/Starlight.
-- All Hugo shortcodes (`callout`) are converted to Starlight's native syntax; no `{{< ... >}}` shortcode syntax remains anywhere in `src/content/docs/`.
+- All current content (homepage, docs index, guides index, resources, privacy, 3 guides) is present and renders correctly under Astro/Starlight.
+- All Hugo shortcodes (`callout`, `details`) are converted to Starlight/HTML equivalents; no `{{< ... >}}` shortcode syntax remains anywhere in `src/content/docs/`.
+- All 5 images are moved to `public/images/guides/...` and all Markdown references are rewritten to the root-absolute path.
+- The homepage's three feature cards are preserved via Starlight's `Card`/`CardGrid` components.
+- Old `/docs/guides/...`, `/docs/resources`, and `/docs` URLs redirect to their new paths via Astro's `redirects` config.
+- The GitHub Actions build step passes `--site`/`--base` (not Hugo's `--baseURL`), sourced from `actions/configure-pages`'s `origin`/`base_path` outputs.
 - `config/`, `@hyas/*` packages, `netlify.toml`, `hugo_stats.json`, and `.hugo_build.lock` are removed.
 - `--sl-content-width` is set via the calc-based override in `src/styles/custom.css`, registered through `customCss`.
 - Migration work happens on a feature branch off `gh-pages` and lands via a single squash-merge.
