@@ -32,11 +32,12 @@ Expected: new branch created, currently identical to `gh-pages`.
 ## Task 1: Scaffold Astro + Starlight, remove Hugo from package.json
 
 **Files:**
-- Modify: `package.json`
+- Modify: `package.json`, `.gitignore`
 - Create: `astro.config.mjs`
 - Create: `src/content.config.ts`
 - Create: `tsconfig.json`
 - Create: `src/content/docs/index.md` (placeholder — replaced with the real homepage in Task 4)
+- Create: `src/content/docs/docs/guides/index.md`
 
 - [ ] **Step 1: Remove Hugo scripts and dependencies from package.json**
 
@@ -75,7 +76,20 @@ npm install astro @astrojs/starlight
 
 Expected: `package.json`'s `dependencies` now includes `astro` and `@astrojs/starlight`; `package-lock.json` is updated.
 
-- [ ] **Step 3: Create the Astro/Starlight config**
+- [ ] **Step 3: Ignore Astro's generated types directory**
+
+Astro creates `.astro/` locally (generated TypeScript types for content collections, env vars, etc.) on every `dev`/`build`/`sync` run, starting with Step 8's build below. It's not currently in `.gitignore` — add it now, before it has a chance to show up as untracked cruft in any `git status` check later in this plan (Task 11's final check expects a clean working tree).
+
+In `.gitignore`, add this block right before the existing `# Next.js build output` section:
+
+```text
+# Astro
+.astro/
+```
+
+(`dist/` is already covered — it's ignored as a side effect of the existing `# Nuxt.js build / generate output` section further down, which happens to use the same directory name.)
+
+- [ ] **Step 4: Create the Astro/Starlight config**
 
 Create `astro.config.mjs`:
 
@@ -101,7 +115,7 @@ export default defineConfig({
 
 (`favicon` and `social` reference files/URLs added in Task 3 — harmless if `public/favicon.svg` doesn't exist yet, Astro will warn but still build. `sidebar` references `docs/guides`, populated in Task 6.)
 
-- [ ] **Step 4: Create the content collection schema**
+- [ ] **Step 5: Create the content collection schema**
 
 Create `src/content.config.ts`:
 
@@ -115,7 +129,7 @@ export const collections = {
 };
 ```
 
-- [ ] **Step 5: Create tsconfig.json**
+- [ ] **Step 6: Create tsconfig.json**
 
 Create `tsconfig.json`:
 
@@ -125,7 +139,7 @@ Create `tsconfig.json`:
 }
 ```
 
-- [ ] **Step 6: Create a placeholder homepage so the build succeeds**
+- [ ] **Step 7: Create a placeholder homepage so the build succeeds**
 
 Create `src/content/docs/index.md`:
 
@@ -139,9 +153,9 @@ template: splash
 Placeholder — replaced with the real homepage in Task 4.
 ```
 
-- [ ] **Step 7: Create the (initially empty) guides directory the sidebar config references**
+- [ ] **Step 8: Create the (initially empty) guides directory the sidebar config references**
 
-Create `src/content/docs/docs/guides/index.md` now, rather than in Task 5 where it'd otherwise land — the sidebar config above (Step 3) references `docs/guides` via `autogenerate` before any file exists there:
+Create `src/content/docs/docs/guides/index.md` now, rather than in Task 5 where it'd otherwise land — the sidebar config above (Step 4) references `docs/guides` via `autogenerate` before any file exists there:
 
 ```markdown
 ---
@@ -151,7 +165,7 @@ title: "Guides"
 
 Traced Starlight's actual autogenerate logic (`packages/starlight/utils/navigation.ts`) to check whether this matters: `entriesFromAutogenerateConfig` filters the content collection's already-resolved route list for paths under the configured directory — there's no filesystem existence check, so an empty or missing directory should just produce an empty sidebar group, not a build error. This step is a low-cost preventive measure rather than a confirmed-necessary fix; it removes any doubt for the cost of creating one stub file slightly earlier than originally planned. Task 5 no longer creates this file (moved here).
 
-- [ ] **Step 8: Build and verify**
+- [ ] **Step 9: Build and verify**
 
 Run:
 
@@ -161,10 +175,10 @@ npm run build
 
 Expected: exits 0, `dist/index.html` and `dist/docs/guides/index.html` both exist.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
-git add package.json package-lock.json astro.config.mjs src/content.config.ts tsconfig.json src/content/docs/index.md src/content/docs/docs/guides/index.md
+git add package.json package-lock.json .gitignore astro.config.mjs src/content.config.ts tsconfig.json src/content/docs/index.md src/content/docs/docs/guides/index.md
 git commit -m "[TASK] Scaffold Astro/Starlight, remove Hugo from package.json"
 ```
 
@@ -1161,7 +1175,7 @@ find content -type f
 find assets -type f
 ```
 
-Expected: `content/` finds nothing (every file was removed in Tasks 4-8). `assets/` finds exactly five remaining files: `assets/scss/common/_custom.scss`, `assets/scss/common/_variables-custom.scss`, `assets/jsconfig.json`, `assets/js/custom.js`, `assets/images/.gitkeep`, `assets/svgs/.gitkeep` — all confirmed-empty Doks placeholders, none of them migrated anywhere because none had real content. If `find assets` shows anything else, stop and figure out what it is before continuing — don't delete something this plan didn't account for.
+Expected: `content/` finds nothing (every file was removed in Tasks 4-8). `assets/` finds exactly six remaining files: `assets/scss/common/_custom.scss`, `assets/scss/common/_variables-custom.scss`, `assets/jsconfig.json`, `assets/js/custom.js`, `assets/images/.gitkeep`, `assets/svgs/.gitkeep` — all confirmed-empty Doks placeholders, none of them migrated anywhere because none had real content. If `find assets` shows anything else, stop and figure out what it is before continuing — don't delete something this plan didn't account for.
 
 - [ ] **Step 2: Remove the remaining Hugo/Doks files and directories**
 
@@ -1207,11 +1221,13 @@ Expected: exits 0.
 - [ ] **Step 2: Verify image src attributes are base-prefixed**
 
 ```bash
-grep -o 'src="[^"]*automatic-z-offset[^"]*"' dist/docs/guides/automatic-z-offset-adjustments/index.html
-grep -o 'src="[^"]*energy-usage[^"]*"' dist/docs/guides/energy-usage-monitoring/index.html
+grep -c "<img" dist/docs/guides/automatic-z-offset-adjustments/index.html
+grep -o 'src="/voron-mods/_astro/[^"]*"' dist/docs/guides/automatic-z-offset-adjustments/index.html
+grep -c "<img" dist/docs/guides/energy-usage-monitoring/index.html
+grep -o 'src="/voron-mods/_astro/[^"]*"' dist/docs/guides/energy-usage-monitoring/index.html
 ```
 
-Expected: every matched `src` starts with `/voron-mods/_astro/` (confirming `astro:assets` applied the base prefix), not a bare `/_astro/` or `/images/...` path.
+Expected: the `<img>` counts are 2 and 3 (matching Tasks 7/8), and the `src="/voron-mods/_astro/..."` grep returns that many matches on each page. Don't grep for the page's own slug (e.g. "automatic-z-offset") inside the `src` value — `astro:assets` hashes filenames from the *image's* own basename (`prusaslicer-filament-settings.<hash>.png`, etc.), which has nothing to do with the page it's embedded on, so a slug-based grep would never match regardless of whether base-prefixing actually worked.
 
 - [ ] **Step 3: Verify the homepage card links are base-prefixed**
 
