@@ -27,6 +27,8 @@ Assumptions:
 - Fluidd camera docs for the native `WebRTC (go2rtc)` camera type.
 - Mainsail webcam docs for supported camera service types and HTTP iframe behavior.
 - Raspbian package indexes for FFmpeg package availability on Bookworm and Trixie.
+- Raspberry Pi 4 and Raspberry Pi 5 product briefs for hardware video encode/decode capabilities.
+- go2rtc FFmpeg hardware acceleration docs for `#hardware` behavior and stability caveats.
 
 ## Content Structure
 
@@ -176,9 +178,17 @@ Explain the stream line directly:
 - `chamber` is the stream name used later in go2rtc, Mainsail, and Fluidd.
 - `/dev/video0` is the camera device path.
 - `input_format=yuyv422` and `video_size=1280x720` must match a mode supported by the camera.
-- `#video=h264#hardware` asks FFmpeg/go2rtc to produce H.264 using hardware acceleration when available.
+- `#video=h264#hardware` asks FFmpeg/go2rtc to produce H.264 using hardware acceleration when a supported H.264 encoder is available.
 
 Do not include `ice_servers` in the main sample. The guide should rely on go2rtc's defaults and mention that overriding ICE servers is only needed for advanced STUN/TURN or remote-access setups.
+
+Add a hardware acceleration callout:
+
+- Hardware H.264 encoding support depends on the Raspberry Pi model and FFmpeg/go2rtc support. Raspberry Pi 4 lists H.264 encode support in its product brief; Raspberry Pi 5 lists HEVC decode support, but not H.264 encode. If `#hardware` causes startup errors or unusable CPU/video behavior, remove `#hardware` and retest, or use a camera/source that can provide H.264 directly with `#video=copy`.
+
+Add a short note for additional cameras:
+
+- To add another camera, duplicate the `chamber:` entry under `streams:` with a new stream name and camera device path, such as `nozzle: ...video=/dev/video1...`. Each camera still needs a supported format/resolution and must not already be held by another process.
 
 Include a short optional diagnostic command:
 
@@ -239,7 +249,7 @@ WantedBy=multi-user.target
 Install and start it:
 
 ```bash
-sudo systemctl enable "$PWD/go2rtc.service"
+sudo systemctl enable /home/pi/go2rtc/go2rtc.service
 sudo systemctl daemon-reload
 sudo systemctl start go2rtc
 sudo systemctl status go2rtc
@@ -288,6 +298,16 @@ If the exact Fluidd field labels differ by version, the guide should describe th
 
 Troubleshooting should be concrete and command-oriented:
 
+Cover these failure categories in this single guide section:
+
+- Wrong binary for the host architecture.
+- Camera device path mismatch, such as `/dev/video1` instead of `/dev/video0`.
+- Unsupported camera format, resolution, or frame rate.
+- Hardware H.264 encoding unavailable or unstable; remove `#hardware` and retest.
+- Camera already in use by Crowsnest or another process.
+- WebUI or WebRTC ports blocked or unreachable.
+- Service failures visible through `journalctl -u go2rtc`.
+
 - Check service state:
 
   ```bash
@@ -318,7 +338,7 @@ Troubleshooting should be concrete and command-oriented:
   sudo fuser /dev/video0
   ```
 
-The text should map each diagnostic to the likely fix: change device path, change `input_format`, change `video_size`, stop/reconfigure the competing streamer, or correct the frontend URL.
+The text should map each diagnostic to the likely fix: change device path, change `input_format`, change `video_size`, remove `#hardware`, stop/reconfigure the competing streamer, or correct the frontend URL.
 
 ### Further Reading
 
@@ -327,7 +347,10 @@ Link to:
 - go2rtc releases
 - go2rtc README/config docs
 - go2rtc V4L2 docs
+- go2rtc FFmpeg hardware acceleration docs
 - go2rtc Web viewer docs
+- Raspberry Pi 4 product brief
+- Raspberry Pi 5 product brief
 - Mainsail webcam settings docs
 - Fluidd camera docs
 
@@ -359,6 +382,8 @@ The guide should use direct imperative wording, matching the existing guides:
 
 Avoid overpromising latency or CPU savings. State that WebRTC is generally lower latency and more bandwidth efficient than MJPEG, but performance still depends on camera format, resolution, network quality, and hardware acceleration.
 
+Avoid implying that hardware acceleration works on every Raspberry Pi model. The guide should explicitly say that Raspberry Pi 5 does not advertise H.264 encode support in its product brief, so users may need to remove `#hardware` or avoid transcoding on that board.
+
 Keep security wording practical:
 
 - go2rtc exposes the WebUI/API on port `1984` and streams on ports such as `8555`.
@@ -385,17 +410,6 @@ Implementation verification for the repository:
 
 - Check Markdown/code-block formatting by visually reviewing the rendered guide or, if a full render is not available, reviewing the generated Markdown around Hugo shortcodes and fenced blocks.
 
-## Troubleshooting
-
-Troubleshooting should cover:
-
-- Wrong binary for the host architecture.
-- Camera device path mismatch, such as `/dev/video1` instead of `/dev/video0`.
-- Unsupported camera format, resolution, or frame rate.
-- Camera already in use by Crowsnest or another process.
-- WebUI or WebRTC ports blocked or unreachable.
-- Service failures visible through `journalctl -u go2rtc`.
-
 ## Acceptance Criteria
 
 - A new guide exists at `content/docs/guides/go2rtc-camera-streaming.md`.
@@ -403,7 +417,10 @@ Troubleshooting should cover:
 - The guide explicitly installs and verifies FFmpeg before configuring the FFmpeg-backed go2rtc stream.
 - The guide includes a corrected install flow that downloads the selected release asset as `~/go2rtc/go2rtc`.
 - The guide includes a complete `go2rtc.yaml` example for the `chamber` stream.
+- The guide includes a one-line note explaining how to add another stream for a second camera.
+- The guide includes a Raspberry Pi hardware acceleration caveat for `#hardware`, including Raspberry Pi 5 H.264 encode limitations.
 - The guide includes a complete systemd unit using the normalized binary path.
+- The guide enables the systemd unit with an absolute service path, not a `$PWD`-dependent command.
 - The guide includes both Mainsail and Fluidd configuration sections.
 - The guide includes verification steps before and after installing the systemd service.
 - The guide includes troubleshooting steps with concrete commands.
