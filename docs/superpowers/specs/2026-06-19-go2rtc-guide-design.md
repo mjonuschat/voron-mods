@@ -13,7 +13,7 @@ The guide is for Voron/Klipper users who can SSH into their printer host and edi
 Assumptions:
 
 - The printer host is a Debian/Raspberry Pi OS style Linux system.
-- Raspberry Pi OS Buster or newer is recommended. FFmpeg exists in the package archives for Debian Stretch and newer, but Stretch is obsolete and should not be the target baseline for this guide.
+- Raspberry Pi OS Bookworm and Trixie are the supported baselines for this guide.
 - The default printer host user is `pi`; the text will tell readers to replace `/home/pi` if they use a different user.
 - The first example camera is a USB camera exposed as `/dev/video0`.
 - The guide focuses on LAN access. Public internet exposure is intentionally out of scope.
@@ -26,7 +26,7 @@ Assumptions:
 - go2rtc Web viewer docs for `stream.html?src=...&mode=...` URLs.
 - Fluidd camera docs for the native `WebRTC (go2rtc)` camera type.
 - Mainsail webcam docs for supported camera service types and HTTP iframe behavior.
-- Debian/Raspbian package indexes for FFmpeg package availability across Raspberry Pi OS base releases.
+- Raspbian package indexes for FFmpeg package availability on Bookworm and Trixie.
 
 ## Content Structure
 
@@ -103,9 +103,9 @@ Explain that the sample stream uses go2rtc's FFmpeg source to read the USB camer
 
 State the OS baseline clearly:
 
-- Raspberry Pi OS Buster, Bullseye, Bookworm, and newer provide an installable `ffmpeg` package through APT.
-- Debian Stretch also provides `ffmpeg`, but Raspberry Pi OS/Raspbian Stretch is old enough that the guide should not recommend it as a supported baseline.
-- Debian/Raspbian Jessie-era installs should be treated as unsupported for this guide because the standard archive path used Libav/`avconv` instead of the `ffmpeg` package.
+- Raspberry Pi OS Bookworm and Trixie provide an installable `ffmpeg` package through APT.
+- Raspberry Pi OS Bullseye, Buster, Stretch, and Jessie-era installs are out of scope for this guide. Some of those releases may have an `ffmpeg` package, but they are legacy/archived baselines and should not be the documented target.
+- If a reader is on an older Raspberry Pi OS release, recommend upgrading or re-imaging to Bookworm or Trixie before following the guide.
 
 Use a dedicated install step:
 
@@ -397,6 +397,7 @@ Troubleshooting should cover:
 ## Acceptance Criteria
 
 - A new guide exists at `content/docs/guides/go2rtc-camera-streaming.md`.
+- The guide states that Raspberry Pi OS Bookworm and Trixie are the supported baselines.
 - The guide explicitly installs and verifies FFmpeg before configuring the FFmpeg-backed go2rtc stream.
 - The guide includes a corrected install flow that downloads the selected release asset as `~/go2rtc/go2rtc`.
 - The guide includes a complete `go2rtc.yaml` example for the `chamber` stream.
