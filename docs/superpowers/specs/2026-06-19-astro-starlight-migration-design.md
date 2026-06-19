@@ -45,13 +45,14 @@ src/styles/custom.css      # --sl-content-width override
 public/                    # Astro's static-asset SOURCE dir
 ```
 
-**Naming collision to handle carefully during migration:** Hugo's `public/` is gitignored *build output*. Astro's `public/` is a *source* directory for static assets copied as-is. Same name, opposite role. The old Hugo build artifact directory must be cleared (or already gitignored and absent from the working tree) before Astro's source `public/` is created in its place — otherwise stale Hugo build output could get mistaken for, or collide with, Astro source assets.
+**Naming collision to handle carefully during migration:** Hugo's `public/` is gitignored *build output* (`.gitignore`, under the "Generate pages" comment). Astro's `public/` is a *source* directory for static assets copied as-is. Same name, opposite role — and the existing blanket `public/` gitignore rule is wrong for Astro: it would silently swallow any future Astro static asset (favicon, `robots.txt`, a custom-domain `CNAME` file) without anyone noticing. Since this migration removes Hugo entirely (Astro's build output goes to `dist/`, not `public/`), remove the `public/` gitignore rule outright rather than patching it with negations — the rule's reason for existing (Hugo build output) goes away along with Hugo. Given the image-mapping decision below, `public/` likely starts out empty or near-empty after migration; that's fine, it's a source directory, not a sign anything is missing.
 
 **Removed:**
 - `config/` (`config/_default/hugo.toml`, `config/next/hugo.toml`, `config/production/hugo.toml`, `config/_default/menus/menus.en.toml`)
 - `@hyas/doks-core`, `@hyas/images`, `@hyas/inline-svg`, `@hyas/seo` npm packages
 - `netlify.toml` (stale, pins an old Hugo version, not the active deploy path)
 - `hugo_stats.json`, `.hugo_build.lock`
+- `resources/` — currently tracked in git despite being Hugo's generated image/Sass cache (`resources/_gen/...`, 15 files, all regeneratable build artifacts that shouldn't have been committed in the first place)
 
 ## Styling: Content Width Fix
 
@@ -136,7 +137,17 @@ becomes plain HTML, which nests fine inside a `:::` aside directive:
 </details>
 ```
 
-**Images:** the existing guides reference 5 PNGs via Hugo's asset pipeline, sourced from `assets/images/guides/{automatic-z-offset-ajustments,energy-usage-monitoring}/*.png` (note: the source folder name has a pre-existing typo, "ajustments" — left as-is unless a cleanup is wanted separately). Move these files to `public/images/guides/...` (Astro's static-asset dir, copied as-is), and rewrite the Markdown references from the relative `images/guides/...` path Hugo resolved through its asset pipeline to the root-absolute `/images/guides/...` path Astro serves `public/` from.
+**Images:** the existing guides reference 5 PNGs via Hugo's asset pipeline, sourced from `assets/images/guides/{automatic-z-offset-ajustments,energy-usage-monitoring}/*.png` (note: the source folder name has a pre-existing typo, "ajustments" — left as-is unless a cleanup is wanted separately).
+
+**Not** `public/` with a root-absolute path. This site's production base is `/voron-mods` (`config/production/hugo.toml:2`, carrying over to Astro's `base` config). Astro only auto-prefixes `base` onto asset URLs it generates itself through its build pipeline — a literal Markdown reference like `![alt](/images/foo.png)` pointing at a `public/` file is emitted into the HTML completely as-written, with no base awareness at all, and would 404 on the deployed site under `/voron-mods/`. Plain `.md` content has no way to interpolate `import.meta.env.BASE_URL` to fix this (that's a JS expression, only usable in `.astro` files or MDX).
+
+Move the images to `src/assets/guides/{automatic-z-offset-ajustments,energy-usage-monitoring}/*.png` instead, and reference them with relative Markdown paths from each guide file:
+
+```text
+![PrusSlicer Filament Settings](../../../../assets/guides/automatic-z-offset-ajustments/prusaslicer-filament-settings.png)
+```
+
+This is Astro's documented recommendation for content-collection images ("local images are kept in `src/` when possible so that Astro can transform, optimize, and bundle them") — Astro processes these through `astro:assets`, the same base-aware pipeline used for bundled CSS/JS, so the `base` prefix is applied automatically and correctly, with image optimization as a side benefit. The relative path is four levels up (`src/content/docs/docs/guides/` → `src/`) given the nested `docs/docs/guides/` path from URL Structure, above, and guides staying flat files rather than folders — worth confirming during implementation whether Astro also resolves a `tsconfig.json` import alias here instead of the relative path; the relative-path approach above is the one that's directly confirmed against Astro's docs.
 
 **File format:** guide/docs content stays `.md`. The homepage becomes `.mdx` (see Homepage, below) to use Starlight's `Card`/`CardGrid` components — that's the only page in this migration that needs MDX.
 
@@ -149,31 +160,31 @@ becomes plain HTML, which nests fine inside a `:::` aside directive:
 ```js
 starlight({
   sidebar: [
-    { label: 'Guides', items: [{ autogenerate: { directory: 'guides' } }] },
+    { label: 'Guides', items: [{ autogenerate: { directory: 'docs/guides' } }] },
   ],
 })
 ```
 
+(`directory` is relative to `src/content/docs/`, so it's `docs/guides` here, not `guides` — see URL Structure, above, for why the content is nested one level deeper than it looks like it should be.)
+
 Sort order is alphabetical by filename — Starlight's autogenerate has no built-in date-based or custom sort. Confirmed acceptable: current guide ordering doesn't need to be preserved exactly, alphabetical-by-filename is fine.
 
-## URL Structure & Redirects
+## URL Structure
 
-Starlight routes directly from `src/content/docs/`: a file at `src/content/docs/guides/foo.md` becomes `/guides/foo`, not `/docs/guides/foo`. Hugo's current permalink config (`config/_default/hugo.toml:59`) explicitly puts guides under `/docs/guides/...`. This migration changes those URLs.
+Starlight routes directly from `src/content/docs/`: a file at `src/content/docs/guides/foo.md` becomes `/guides/foo`, not `/docs/guides/foo`. Hugo's current permalink config (`config/_default/hugo.toml:59`) explicitly puts guides under `/docs/guides/...`, scoped to content with type/section `docs`. `content/privacy.md` has `type: "legal"`, so that permalink rule doesn't apply to it — it's already at root `/privacy/` today and is unaffected by anything below.
 
-Decision: accept the new `/guides/...` URLs (simpler source tree than nesting a redundant `docs` folder inside `src/content/docs/`), and add redirects from the old paths using Astro's `redirects` config in `astro.config.mjs` (this is core Astro, not Starlight-specific):
+Decision: preserve the exact current URLs, no redirects. Since Starlight requires all content under `src/content/docs/`, getting an actual `/docs/...` URL (not just a redirect target) means nesting the docs-tree content one level deeper, inside an extra `docs/` folder within that root:
 
-```js
-export default defineConfig({
-  redirects: {
-    '/docs/guides/[...slug]': '/guides/[...slug]',
-    '/docs/resources': '/resources',
-    '/docs': '/',
-  },
-  // ...
-});
+```text
+src/content/docs/index.mdx              → /            (homepage, not nested)
+src/content/docs/privacy.md             → /privacy     (not nested, see above)
+src/content/docs/docs/index.md          → /docs
+src/content/docs/docs/resources.md      → /docs/resources
+src/content/docs/docs/guides/index.md   → /docs/guides
+src/content/docs/docs/guides/*.md       → /docs/guides/*
 ```
 
-Caveat: GitHub Pages is static hosting with no server, so Astro compiles these to `<meta http-equiv="refresh">` redirect pages, not true HTTP 301s. That's transparent for anyone following an old bookmark or link (the browser follows it immediately), but it's a weaker signal for search engines than a real 301. Acceptable for this site; worth knowing rather than assuming it's identical to a server-side redirect.
+The doubled `docs/docs/` path looks redundant, but it's the documented mechanism for getting a `/docs` URL prefix while still satisfying Starlight's "everything lives under `src/content/docs/`" requirement. This affects the sidebar config and the images' relative-path depth (both below).
 
 ## Homepage
 
@@ -186,6 +197,8 @@ Caveat: GitHub Pages is static hosting with no server, so Astro compiles these t
 (A fourth section in that same layout file, a "Start building with Doks today" CTA, is gated behind `sectionFooter = false` in `config/_default/params.toml` and never actually renders — that one's dead code, not migrated.)
 
 Decision: keep the feature cards, using Starlight's built-in `Card`/`CardGrid` components, which exist for exactly this pattern. The homepage becomes `src/content/docs/index.mdx` (Starlight's standard homepage location — content directly in the `docs` root maps to `/`) instead of `.md`, since `Card`/`CardGrid` are components that need MDX. The page still uses `template: splash` frontmatter for the hero title/tagline; the `CardGrid` of three `Card`s replaces the hardcoded HTML from `layouts/index.html`.
+
+Same base-path issue as the images applies to each `Card`'s `href` — a literal `href="/docs/guides/..."` would 404 under the `/voron-mods` base for the same reason. Since this page is `.mdx`, it can use a JS expression directly: `href={`${import.meta.env.BASE_URL}docs/guides/...`}`.
 
 ## Build & Deploy
 
@@ -218,12 +231,13 @@ Plan: branch from `gh-pages`, do the migration as a sequence of commits (scaffol
 - Each migrated page renders: homepage splash, docs index, guides index, resources, privacy, and all three guides.
 - Callouts render with the correct type/styling for all four variants used across the existing content.
 - Disclosure blocks (the converted `details` shortcode) render and expand/collapse correctly in both locations they're used.
-- All 5 images render at their new `/images/guides/...` paths.
+- All 5 images render correctly under the production `/voron-mods` base path, not just in local dev (where base-prefix bugs are invisible — test against a build with `--base /voron-mods` set, not just `astro dev`).
+- Homepage feature card links resolve correctly under the same base path.
 - Code blocks render with their `title="..."` labels intact.
 - Sidebar shows all docs/guides pages, alphabetically ordered.
 - `--sl-content-width` fix is visibly wider than Starlight's 45rem default on a large viewport, with no ToC overflow.
 - Homepage renders the hero (title/tagline) and all three feature cards via `CardGrid`/`Card`, linking to the correct guides.
-- Visiting an old `/docs/guides/...` URL redirects to the new `/guides/...` path.
+- Guide/docs URLs are unchanged from the current site (`/docs/guides/...`, `/docs/resources`, `/docs`) — no redirects, no broken bookmarks.
 - GitHub Pages deploy workflow runs green end-to-end on the feature branch (via `workflow_dispatch` or a temporary branch trigger) before the squash-merge into `gh-pages`.
 
 ## Out of Scope
@@ -241,9 +255,11 @@ Plan: branch from `gh-pages`, do the migration as a sequence of commits (scaffol
 - `.github/workflows/deploy.yml` no longer installs Hugo or Dart Sass, and uploads `./dist`.
 - All current content (homepage, docs index, guides index, resources, privacy, 3 guides) is present and renders correctly under Astro/Starlight.
 - All Hugo shortcodes (`callout`, `details`) are converted to Starlight/HTML equivalents; no `{{< ... >}}` shortcode syntax remains anywhere in `src/content/docs/`.
-- All 5 images are moved to `public/images/guides/...` and all Markdown references are rewritten to the root-absolute path.
-- The homepage's three feature cards are preserved via Starlight's `Card`/`CardGrid` components.
-- Old `/docs/guides/...`, `/docs/resources`, and `/docs` URLs redirect to their new paths via Astro's `redirects` config.
+- All 5 images are moved to `src/assets/guides/...`, referenced via relative Markdown paths, and verified to resolve correctly under the `/voron-mods` production base path (not just root-relative in local dev).
+- The homepage's three feature cards are preserved via Starlight's `Card`/`CardGrid` components, with `href`s explicitly prefixed via `import.meta.env.BASE_URL`.
+- The `public/` gitignore rule is removed (it was a Hugo-build-output convention; Astro's `public/` is source, and the old rule would silently hide future static assets).
+- `resources/_gen/` (Hugo's generated image/Sass cache, currently tracked) is removed from the repo.
+- `/docs/guides/...`, `/docs/resources`, and `/docs` URLs are identical to the current site, via content nested under `src/content/docs/docs/...` — no redirects configured or needed.
 - The GitHub Actions build step passes `--site`/`--base` (not Hugo's `--baseURL`), sourced from `actions/configure-pages`'s `origin`/`base_path` outputs.
 - `config/`, `@hyas/*` packages, `netlify.toml`, `hugo_stats.json`, and `.hugo_build.lock` are removed.
 - `--sl-content-width` is set via the calc-based override in `src/styles/custom.css`, registered through `customCss`.
