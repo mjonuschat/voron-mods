@@ -166,8 +166,6 @@ srtp:
 
 webrtc:
   listen: ":8555/tcp"
-  ice_servers:
-    - urls: [ "stun:stun.l.google.com:19302" ]
 
 streams:
   chamber: ffmpeg:device?video=/dev/video0&input_format=yuyv422&video_size=1280x720#video=h264#hardware
@@ -179,6 +177,11 @@ Explain the stream line directly:
 - `/dev/video0` is the camera device path.
 - `input_format=yuyv422` and `video_size=1280x720` must match a mode supported by the camera.
 - `#video=h264#hardware` asks FFmpeg/go2rtc to produce H.264 using hardware acceleration when available.
+- The sample does not set `webrtc.ice_servers`. Avoid hardcoding a public STUN server in the main guide; custom STUN/TURN configuration belongs in an advanced remote-access setup.
+
+Add a callout after the config:
+
+- If the camera must work across networks, VPNs, reverse proxies, or the public internet, do not treat this sample as sufficient. Remote WebRTC access may need explicit ICE candidate, STUN, or TURN planning and remains out of scope for this guide.
 
 Include a short optional diagnostic command:
 
@@ -336,6 +339,8 @@ Link to:
 The installation should normalize the downloaded binary to `/home/pi/go2rtc/go2rtc` so later commands and the systemd unit do not depend on the release asset name. The guide will mention choosing the correct release asset for the host architecture, with `go2rtc_linux_arm64` as the Raspberry Pi 64-bit example.
 
 The sample `go2rtc.yaml` will keep the user's intended stream name, `chamber`, and use a V4L2/FFmpeg source for `/dev/video0` at `1280x720`. It will include a note that only one service can usually open a USB camera device at a time, so Crowsnest or another streamer may need to be stopped or reconfigured.
+
+The sample WebRTC configuration will not hardcode Google, Cloudflare, or any other public STUN servers. Because the guide targets same-LAN printer UI access, it will omit `ice_servers` and explain that remote WebRTC access is a separate topic.
 
 The systemd unit will use the normalized binary path and config path. It should include `WorkingDirectory=/home/pi/go2rtc`, restart automatically, and run as root only because common printer-host USB camera permissions are inconsistent. The text will call this out rather than presenting it as an ideal security posture.
 
