@@ -28,11 +28,12 @@
 
 - [ ] **Step 1: Create the guide file with front matter and the opening sections**
 
-Use `apply_patch` to add `content/docs/guides/go2rtc-camera-streaming.md` with this content:
+Create `content/docs/guides/go2rtc-camera-streaming.md` with the available file-editing tool and this content:
 
 ```markdown
 ---
 title: "Low-Latency Camera Streaming with go2rtc"
+slug: "go2rtc-camera-streaming"
 description: "How to install go2rtc for a Klipper printer camera and configure the stream in Mainsail and Fluidd"
 summary: ""
 date: 2026-06-19T00:00:00Z
@@ -146,6 +147,7 @@ sed -n '1,150p' content/docs/guides/go2rtc-camera-streaming.md
 
 Expected:
 - Front matter is present.
+- Front matter includes `slug: "go2rtc-camera-streaming"`.
 - Sections are `Introduction`, `Prerequisites`, `Install FFmpeg`, and `Install go2rtc`.
 - No `ice_servers` setting appears in this section.
 
@@ -167,7 +169,7 @@ Expected: commit succeeds with one new guide file.
 
 - [ ] **Step 1: Append the camera configuration, test, and service sections**
 
-Use `apply_patch` to append this content after the `Install go2rtc` section:
+Append this content after the `Install go2rtc` section with the available file-editing tool:
 
 ```markdown
 
@@ -362,7 +364,7 @@ Expected: commit succeeds with one modified guide file.
 
 - [ ] **Step 1: Append frontend configuration and closing sections**
 
-Use `apply_patch` to append this content after the `Start go2rtc on Boot` section:
+Append this content after the `Start go2rtc on Boot` section with the available file-editing tool:
 
 ```markdown
 
@@ -541,10 +543,11 @@ Expected: no output and exit code 1.
 Run:
 
 ```bash
-rg -n "go2rtc_linux_arm64|ice_servers|Bullseye|Buster|Stretch|Jessie|Bookworm|Trixie|Raspberry Pi 5|#hardware|HTML Iframe|WebRTC \\(go2rtc\\)" content/docs/guides/go2rtc-camera-streaming.md
+rg -n "slug: \"go2rtc-camera-streaming\"|go2rtc_linux_arm64|ice_servers|Bullseye|Buster|Stretch|Jessie|Bookworm|Trixie|Raspberry Pi 5|#hardware|HTML Iframe|WebRTC \\(go2rtc\\)" content/docs/guides/go2rtc-camera-streaming.md
 ```
 
 Expected:
+- `slug: "go2rtc-camera-streaming"` appears in front matter.
 - `go2rtc_linux_arm64` appears in the binary download section.
 - `ice_servers` appears only in explanatory text saying the sample omits it.
 - `Bookworm` and `Trixie` appear in supported OS wording.
@@ -561,17 +564,7 @@ rg -n "^\\s+ice_servers:" content/docs/guides/go2rtc-camera-streaming.md
 
 Expected: no output and exit code 1.
 
-- [ ] **Step 2: Check whitespace errors**
-
-Run:
-
-```bash
-git diff --check
-```
-
-Expected: no output and exit code 0.
-
-- [ ] **Step 3: Build the site**
+- [ ] **Step 2: Build the site**
 
 Run:
 
@@ -584,7 +577,7 @@ Expected:
 - No shortcode errors.
 - No Markdown render errors.
 
-- [ ] **Step 4: Inspect the generated guide page if the build succeeds**
+- [ ] **Step 3: Inspect the generated guide page if the build succeeds**
 
 Run:
 
@@ -594,6 +587,18 @@ rg -n "Low-Latency Camera Streaming with go2rtc|Install FFmpeg|Configure Mainsai
 
 Expected:
 - Each searched heading appears in the generated HTML.
+
+- [ ] **Step 4: Check whitespace after any verification edits**
+
+If the build or generated-page inspection required edits, run this after making those edits and before committing:
+
+```bash
+git diff --check
+```
+
+Expected: no output and exit code 0.
+
+If no edits were required in Task 4, this still exits 0 on a clean tree.
 
 - [ ] **Step 5: Commit verification fixes if any were needed**
 

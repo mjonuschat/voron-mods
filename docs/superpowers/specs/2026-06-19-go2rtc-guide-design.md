@@ -45,6 +45,7 @@ Proposed front matter:
 ```yaml
 ---
 title: "Low-Latency Camera Streaming with go2rtc"
+slug: "go2rtc-camera-streaming"
 description: "How to install go2rtc for a Klipper printer camera and configure the stream in Mainsail and Fluidd"
 summary: ""
 date: 2026-06-19T00:00:00Z
@@ -413,6 +414,7 @@ Implementation verification for the repository:
 ## Acceptance Criteria
 
 - A new guide exists at `content/docs/guides/go2rtc-camera-streaming.md`.
+- The guide front matter sets `slug: "go2rtc-camera-streaming"` so the public URL is stable and matches the planned verification path.
 - The guide states that Raspberry Pi OS Bookworm and Trixie are the supported baselines.
 - The guide explicitly installs and verifies FFmpeg before configuring the FFmpeg-backed go2rtc stream.
 - The guide includes a corrected install flow that downloads the selected release asset as `~/go2rtc/go2rtc`.
