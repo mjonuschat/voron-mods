@@ -12,7 +12,7 @@
 
 - Production base path is `/voron-mods` (GitHub Pages project site at `mjonuschat/voron-mods`, full origin `https://mjonuschat.github.io`). Any link or image reference written as a literal string in Markdown/MDX/config (e.g. `/images/foo.png`, `href="/guides/foo"`) will silently 404 in production — Astro only base-prefixes assets it processes itself (`astro:assets`, bundled CSS/JS) or values read from `import.meta.env.BASE_URL` at runtime. Never write a literal root-relative path in content; use relative paths for images and `import.meta.env.BASE_URL` for any hardcoded link in MDX. `BASE_URL` is not guaranteed to have a trailing slash (it mirrors whatever `--base` was passed, untouched, under the default `trailingSlash: 'ignore'`) — strip any trailing slash and supply the `/` separator explicitly when concatenating a path onto it.
 - Guide/docs URLs must stay byte-identical to today: `/docs/guides/<slug>`, `/docs/guides`, `/docs`, `/docs/resources`, `/privacy`, `/`. No redirects.
-- Guides and all stub pages stay `.md`. Only the homepage (`src/content/docs/index.mdx`) is `.mdx`, because it's the only page using a component (`Card`/`CardGrid`).
+- Guides and all stub pages stay `.md`. Only the homepage (`src/content/docs/index.mdx`) is `.mdx`, because it's the only page using a component (`LinkCard`/`CardGrid`).
 - Callout type names map 1:1: `note`, `tip`, `caution`, `danger`. The Doks `icon="outline/..."` parameter is dropped; Starlight's default icon per type is used instead.
 - Migration happens on a feature branch cut from `gh-pages`, landing via a single squash-merge — not an orphan branch.
 - Source: `docs/superpowers/specs/2026-06-19-astro-starlight-migration-design.md`.
@@ -351,30 +351,26 @@ description: "A collection of guides & tutorials for Voron 3D Printers"
 template: splash
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 export const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 A collection of guides & tutorials for Voron 3D Printers
 
 <CardGrid>
-	<Card title="Energy Usage Tracking" icon="rocket" href={`${base}/docs/guides/energy-usage-monitoring-tracking/`}>
-		Step-by-step tutorial to integrate a network-connected power meter with Moonraker, enabling real-time energy consumption monitoring and historical data tracking.
-	</Card>
-	<Card title="Optimized Bed Leveling Macros" icon="rocket" href={`${base}/docs/guides/optimized-bed-leveling-macros/`}>
-		Guide to implementing a two-pass bed leveling approach, consisting of an initial coarse leveling pass for safety and speed, followed by a fine leveling pass for precise accuracy.
-	</Card>
-	<Card title="Automating Z Offset Adjustments" icon="rocket" href={`${base}/docs/guides/automating-z-offset-adjustments/`}>
-		Detailed step-by-step instructions to configure Z offset adjustments for each filament type in your Slicer software, suitable for all Klipper enabled printers.
-	</Card>
+	<LinkCard title="Energy Usage Tracking" href={`${base}/docs/guides/energy-usage-monitoring-tracking/`} description="Step-by-step tutorial to integrate a network-connected power meter with Moonraker, enabling real-time energy consumption monitoring and historical data tracking." />
+	<LinkCard title="Optimized Bed Leveling Macros" href={`${base}/docs/guides/optimized-bed-leveling-macros/`} description="Guide to implementing a two-pass bed leveling approach, consisting of an initial coarse leveling pass for safety and speed, followed by a fine leveling pass for precise accuracy." />
+	<LinkCard title="Automating Z Offset Adjustments" href={`${base}/docs/guides/automating-z-offset-adjustments/`} description="Detailed step-by-step instructions to configure Z offset adjustments for each filament type in your Slicer software, suitable for all Klipper enabled printers." />
 </CardGrid>
 ```
 
-The `href` on each `Card` is a JS expression building the URL from `import.meta.env.BASE_URL`, not a literal string. This is the only correct option for a link like this written directly in content — a plain Markdown link (`[text](/docs/guides/...)`) would have the exact same problem as the images: it's a literal string emitted as-is into the `<a href>`, with no base-prefixing applied by anything in Astro's pipeline. There's no Starlight mechanism that makes hardcoded absolute paths in Markdown/MDX body content base-aware; only assets processed through `astro:assets` (Task 7-8's images) and Starlight's own first-party config options (the `favicon` option in Task 3) get that treatment automatically.
+`LinkCard`, not `Card`, is the component that actually renders a clickable link. Checked Starlight's source (`packages/starlight/user-components/Card.astro`): `Card`'s `Props` interface is only `{ icon?: StarlightIcon; title: string; }` — `href` isn't part of it, isn't destructured, and is silently dropped if passed. `Card` renders a plain `<article>` with no `<a>` tag anywhere in its output; it's a static box, not a link. `LinkCard.astro`'s `Props` extends `Omit<HTMLAttributes<'a'>, 'title'>` plus `description`, and spreads `...attributes` (including `href`) onto a real `<a>`. `LinkCard` has no `icon` prop (it always renders a fixed arrow icon) and no slot for body content — that's why the description text moved from a child into the `description` prop. Verified by compiling this exact block through `@mdx-js/mdx`'s `compile()`.
+
+The `href` on each `LinkCard` is a JS expression building the URL from `import.meta.env.BASE_URL`, not a literal string. This is the only correct option for a link like this written directly in content — a plain Markdown link (`[text](/docs/guides/...)`) would have the exact same problem as the images: it's a literal string emitted as-is into the `<a href>`, with no base-prefixing applied by anything in Astro's pipeline. There's no Starlight mechanism that makes hardcoded absolute paths in Markdown/MDX body content base-aware; only assets processed through `astro:assets` (Task 7-8's images) and Starlight's own first-party config options (the `favicon` option in Task 3) get that treatment automatically.
 
 `BASE_URL`'s trailing slash isn't guaranteed — Astro's config schema (`packages/astro/src/core/config/schemas/relative.ts`) only force-adds or force-strips a trailing slash on `base` when `trailingSlash` is explicitly `'always'` or `'never'`; the default `'ignore'` (unset here) leaves `base` exactly as passed to `--base` on the CLI. Since Task 9's build command passes `--base "/voron-mods"` with no trailing slash, plain `${base}docs/...` concatenation would silently produce `/voron-modsdocs/...`. Stripping any trailing slash from `base` and hardcoding the `/` separator in the template literal makes this correct regardless of `trailingSlash`'s value. Verify the actual rendered `href` values in Task 11.
 
-The `base` declaration must be `export const`, not a bare `const`. MDX's compiler only recognizes a top-level block as code (ESM) if it starts with `import` or `export` — confirmed by compiling both forms through `@mdx-js/mdx`'s `compile()`: a bare `const base = ...;` gets parsed as a markdown paragraph (literally rendered as the text `const base = ...;`), and `base` is then undefined wherever the `Card` `href`s reference it, throwing `base is not defined` at build time. `export const` is recognized as ESM and hoisted above the generated `_createMdxContent` function, where it's reachable via ordinary closure — the `export` keyword itself isn't what makes it accessible, it's what makes MDX treat the line as code instead of prose in the first place.
+The `base` declaration must be `export const`, not a bare `const`. MDX's compiler only recognizes a top-level block as code (ESM) if it starts with `import` or `export` — confirmed by compiling both forms through `@mdx-js/mdx`'s `compile()`: a bare `const base = ...;` gets parsed as a markdown paragraph (literally rendered as the text `const base = ...;`), and `base` is then undefined wherever the `LinkCard` `href`s reference it, throwing `base is not defined` at build time. `export const` is recognized as ESM and hoisted above the generated `_createMdxContent` function, where it's reachable via ordinary closure — the `export` keyword itself isn't what makes it accessible, it's what makes MDX treat the line as code instead of prose in the first place.
 
 - [ ] **Step 2: Delete the old Hugo homepage files**
 
@@ -389,17 +385,18 @@ Run:
 ```bash
 npm run build
 grep -o "Voron Guides" dist/index.html
-grep -c "card" dist/index.html
+grep -c "sl-link-card" dist/index.html
+grep -o 'href="[^"]*docs/guides[^"]*"' dist/index.html
 ```
 
-Expected: build exits 0, "Voron Guides" appears in the output, and the card grep returns a non-zero count (the three `Card` components rendered).
+Expected: build exits 0, "Voron Guides" appears in the output, the `sl-link-card` count is 3 (confirms `LinkCard`'s own class, not the ambiguous `card` substring both `Card` and `LinkCard` would match), and the `href` grep prints three links — one per guide. The `href` check specifically is what proves these are real clickable links rather than `Card`'s static, non-linking box (`Card` accepts no `href` prop and would have rendered with this same `grep -c "card"` count satisfied while producing zero actual links — checking for the link-bearing class and the actual `href` values is what catches that).
 
 - [ ] **Step 4: Commit**
 
 ```bash
 git add -A src/content/docs/index.mdx
 git rm -r --cached content/_index.md layouts/index.html 2>/dev/null || true
-git commit -m "[TASK] Migrate homepage to Starlight Card/CardGrid"
+git commit -m "[TASK] Migrate homepage to Starlight LinkCard/CardGrid"
 ```
 
 ## Task 5: Migrate the docs index, resources, and privacy pages
@@ -1239,7 +1236,7 @@ Expected: the `<img>` counts are 2 and 3 (matching Tasks 7/8), and the `src="/vo
 grep -o 'href="[^"]*docs/guides[^"]*"' dist/index.html
 ```
 
-Expected: every matched `href` starts with `/voron-mods/docs/guides/...`. If any link is missing the `/voron-mods` prefix, double-check Task 4's `Card` `href` expressions actually use `import.meta.env.BASE_URL` as written and weren't accidentally hardcoded as literal strings during implementation.
+Expected: every matched `href` starts with `/voron-mods/docs/guides/...`. If any link is missing the `/voron-mods` prefix, double-check Task 4's `LinkCard` `href` expressions actually use `import.meta.env.BASE_URL` as written and weren't accidentally hardcoded as literal strings during implementation.
 
 - [ ] **Step 4: Verify the favicon link is base-prefixed, and the mask-icon link is the correct hardcoded absolute URL**
 

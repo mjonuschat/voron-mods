@@ -152,7 +152,7 @@ Move the images to `src/assets/guides/{automatic-z-offset-ajustments,energy-usag
 
 This is Astro's documented recommendation for content-collection images ("local images are kept in `src/` when possible so that Astro can transform, optimize, and bundle them") — Astro processes these through `astro:assets`, the same base-aware pipeline used for bundled CSS/JS, so the `base` prefix is applied automatically and correctly, with image optimization as a side benefit. The relative path is four levels up (`src/content/docs/docs/guides/` → `src/`) given the nested `docs/docs/guides/` path from URL Structure, above, and guides staying flat files rather than folders — worth confirming during implementation whether Astro also resolves a `tsconfig.json` import alias here instead of the relative path; the relative-path approach above is the one that's directly confirmed against Astro's docs.
 
-**File format:** guide/docs content stays `.md`. The homepage becomes `.mdx` (see Homepage, below) to use Starlight's `Card`/`CardGrid` components — that's the only page in this migration that needs MDX.
+**File format:** guide/docs content stays `.md`. The homepage becomes `.mdx` (see Homepage, below) to use Starlight's `LinkCard`/`CardGrid` components — that's the only page in this migration that needs MDX.
 
 **Numbered steps:** Hugo's repeated `1.` auto-increment convention is plain CommonMark behavior — unchanged in any Markdown renderer, no migration needed.
 
@@ -199,9 +199,9 @@ The doubled `docs/docs/` path looks redundant, but it's the documented mechanism
 
 (A fourth section in that same layout file, a "Start building with Doks today" CTA, is gated behind `sectionFooter = false` in `config/_default/params.toml` and never actually renders — that one's dead code, not migrated.)
 
-Decision: keep the feature cards, using Starlight's built-in `Card`/`CardGrid` components, which exist for exactly this pattern. The homepage becomes `src/content/docs/index.mdx` (Starlight's standard homepage location — content directly in the `docs` root maps to `/`) instead of `.md`, since `Card`/`CardGrid` are components that need MDX. The page still uses `template: splash` frontmatter for the hero title/tagline; the `CardGrid` of three `Card`s replaces the hardcoded HTML from `layouts/index.html`.
+Decision: keep the feature cards, using Starlight's built-in `LinkCard`/`CardGrid` components, which exist for exactly this pattern — `LinkCard` is the link-capable card (`href` plus `description`); the plain `Card` component has no `href` prop and renders a static, non-linking box. The homepage becomes `src/content/docs/index.mdx` (Starlight's standard homepage location — content directly in the `docs` root maps to `/`) instead of `.md`, since `LinkCard`/`CardGrid` are components that need MDX. The page still uses `template: splash` frontmatter for the hero title/tagline; the `CardGrid` of three `LinkCard`s replaces the hardcoded HTML from `layouts/index.html`.
 
-Same base-path issue as the images applies to each `Card`'s `href` — a literal `href="/docs/guides/..."` would 404 under the `/voron-mods` base for the same reason. Since this page is `.mdx`, it can use a JS expression directly: `href={`${import.meta.env.BASE_URL}docs/guides/...`}`.
+Same base-path issue as the images applies to each `LinkCard`'s `href` — a literal `href="/docs/guides/..."` would 404 under the `/voron-mods` base for the same reason. Since this page is `.mdx`, it can use a JS expression directly: `href={`${import.meta.env.BASE_URL}docs/guides/...`}`.
 
 ## Branding & SEO Assets
 
@@ -251,7 +251,7 @@ Plan: branch from `gh-pages`, do the migration as a sequence of commits (scaffol
 - Code blocks render with their `title="..."` labels intact.
 - Sidebar shows all docs/guides pages, alphabetically ordered.
 - `--sl-content-width` fix is visibly wider than Starlight's 45rem default on a large viewport, with no ToC overflow.
-- Homepage renders the hero (title/tagline) and all three feature cards via `CardGrid`/`Card`, linking to the correct guides.
+- Homepage renders the hero (title/tagline) and all three feature cards via `CardGrid`/`LinkCard`, linking to the correct guides.
 - Guide/docs URLs are unchanged from the current site (`/docs/guides/...`, `/docs/resources`, `/docs`) — no redirects, no broken bookmarks.
 - Favicon renders correctly in the browser tab; viewing page source shows `og:image`/`twitter:image` tags pointing at `cover.png`.
 - GitHub Pages deploy workflow runs green end-to-end on the feature branch (via `workflow_dispatch` or a temporary branch trigger) before the squash-merge into `gh-pages`.
@@ -273,7 +273,7 @@ Plan: branch from `gh-pages`, do the migration as a sequence of commits (scaffol
 - All current content (homepage, docs index, guides index, resources, privacy, 3 guides) is present and renders correctly under Astro/Starlight.
 - All Hugo shortcodes (`callout`, `details`) are converted to Starlight/HTML equivalents; no `{{< ... >}}` shortcode syntax remains anywhere in `src/content/docs/`.
 - All 5 images are moved to `src/assets/guides/...`, referenced via relative Markdown paths, and verified to resolve correctly under the `/voron-mods` production base path (not just root-relative in local dev).
-- The homepage's three feature cards are preserved via Starlight's `Card`/`CardGrid` components, with `href`s explicitly prefixed via `import.meta.env.BASE_URL`.
+- The homepage's three feature cards are preserved via Starlight's `LinkCard`/`CardGrid` components, with `href`s explicitly prefixed via `import.meta.env.BASE_URL`.
 - The `public/` gitignore rule is removed (it was a Hugo-build-output convention; Astro's `public/` is source, and the old rule would silently hide future static assets).
 - `resources/_gen/` (Hugo's generated image/Sass cache, currently tracked) is removed from the repo.
 - `/docs/guides/...`, `/docs/resources`, and `/docs` URLs are identical to the current site, via content nested under `src/content/docs/docs/...` — no redirects configured or needed.
