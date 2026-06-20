@@ -79,7 +79,7 @@ In your Slicer, navigate to Filament Settings and select the Custom G-code entry
 
 ### Step 2: Add Start G-Code
 
-```gcode title="Start G-Code"
+```text title="Start G-Code"
 SET_GCODE_OFFSET Z_ADJUST=0.3
 ```
 
