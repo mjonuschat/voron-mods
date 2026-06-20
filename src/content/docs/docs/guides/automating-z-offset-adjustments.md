@@ -1,17 +1,6 @@
 ---
 title: "Automating Z Offset Adjustments"
 description: "Perfect First Layers: Automating Z Offset Adjustments"
-summary: ""
-date: 2024-07-20T02:10:01Z
-lastmod: 2024-07-20T02:10:01Z
-draft: false
-weight: 810
-toc: true
-seo:
-  title: "" # custom title (optional)
-  description: "" # custom description (recommended)
-  canonical: "" # custom canonical URL (optional)
-  noindex: false # false (default) or true
 ---
 
 ## Introduction
@@ -33,18 +22,19 @@ To utilize this guide, ensure you have the following:
 
 The printer.cfg file should already contain a `PRINT_END` macro definition, as this is a standard configuration in Voron setups. If you require a template, refer to the callout section below. To modify the `PRINT_END` macro, append the following command to its end. If your macro utilizes the `SAVE_GCODE_STATE` and `RESTORE_GCODE_STATE` commands, ensure that the added command follows the `RESTORE_GCODE_STATE` command. This is crucial because `RESTORE_GCODE_STATE` also restores the saved G-code offset, which could result in incremental changes to the offset between print jobs, rather than resetting to the baseline offset.
 
-```ini {title="printer.cfg"}
+```ini title="printer.cfg"
     SET_GCODE_OFFSET Z=0
 ```
 
 The `SET_GCODE_OFFSET` command effectively resets the positional offset on the Z-axis to zero, thereby ensuring that all subsequent G-Code commands will execute without any Z-axis offsets. This resets the baseline for Z-axis positioning, allowing subsequent print jobs to adjust from known starting point.
 
-{{< callout context="tip" title="No PRINT_END macro?" icon="outline/rocket" >}}
+:::tip[No PRINT_END macro?]
 The `PRINT_END` macro should be part of your `printer.cfg` as it is an integral part of the stock Voron Klipper configuration. Check the code snippet below in case you don't have one defined yet.
 
-{{< details "Macro: PRINT_END" >}}
+<details>
+<summary>Macro: PRINT_END</summary>
 
-```ini {title="printer.cfg"}
+```ini title="printer.cfg"
 [gcode_macro PRINT_END]
 gcode:
     # safe anti-stringing move coords
@@ -76,8 +66,8 @@ gcode:
     RESTORE_GCODE_STATE NAME=STATE_PRINT_END MOVE=0
 ```
 
-{{< /details >}}
-{{< /callout >}}
+</details>
+:::
 
 ## Configuring Filament Settings in Your Slicer
 
@@ -89,11 +79,11 @@ In your Slicer, navigate to Filament Settings and select the Custom G-code entry
 
 ### Step 2: Add Start G-Code
 
-```gcode {title="Start G-Code"}
+```gcode title="Start G-Code"
 SET_GCODE_OFFSET Z_ADJUST=0.3
 ```
 
-![PrusSlicer Filament Settings](images/guides/automatic-z-offset-ajustments/prusaslicer-filament-settings.png)
+![PrusSlicer Filament Settings](../../../../assets/guides/automatic-z-offset-ajustments/prusaslicer-filament-settings.png)
 
 Note that the `SET_GCODE_OFFSET` command is utilized again, this time with the `Z_ADJUST` parameter, differing from the `Z` parameter used in the `PRINT_END` macro. The key distinction between these parameters is that `Z` sets the positional offset to the specified value, whereas `Z_ADJUST` modifies the existing offset by adding or subtracting the given value. For instance, executing `SET_GCODE_OFFSET Z=-0.2` followed by `SET_GCODE_OFFSET Z_ADJUST=0.3` results in a cumulative positional offset of **0.1** for the Z axis. This highlights the importance of resetting the offset post-print to maintain the correct Z offset.
 
@@ -104,7 +94,7 @@ To confirm that the adjustments are being applied correctly, perform the followi
 1. Slice and initiate a new print job.
 2. Observe the Z offset adjustment during the print job preparation phase. If the configuration is correct, the WebUI displays the desired Z offset in the Toolhead card, as shown in the screenshot below:
 
-   ![Mainsail Toolhead Z-Offset](images/guides/automatic-z-offset-ajustments/mainsail-toolhead-z-offset.png)
+   ![Mainsail Toolhead Z-Offset](../../../../assets/guides/automatic-z-offset-ajustments/mainsail-toolhead-z-offset.png)
 
 ## Further Reading
 
