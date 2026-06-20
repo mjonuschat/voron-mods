@@ -353,7 +353,7 @@ template: splash
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+export const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 A collection of guides & tutorials for Voron 3D Printers
 
@@ -373,6 +373,8 @@ A collection of guides & tutorials for Voron 3D Printers
 The `href` on each `Card` is a JS expression building the URL from `import.meta.env.BASE_URL`, not a literal string. This is the only correct option for a link like this written directly in content — a plain Markdown link (`[text](/docs/guides/...)`) would have the exact same problem as the images: it's a literal string emitted as-is into the `<a href>`, with no base-prefixing applied by anything in Astro's pipeline. There's no Starlight mechanism that makes hardcoded absolute paths in Markdown/MDX body content base-aware; only assets processed through `astro:assets` (Task 7-8's images) and Starlight's own first-party config options (the `favicon` option in Task 3) get that treatment automatically.
 
 `BASE_URL`'s trailing slash isn't guaranteed — Astro's config schema (`packages/astro/src/core/config/schemas/relative.ts`) only force-adds or force-strips a trailing slash on `base` when `trailingSlash` is explicitly `'always'` or `'never'`; the default `'ignore'` (unset here) leaves `base` exactly as passed to `--base` on the CLI. Since Task 9's build command passes `--base "/voron-mods"` with no trailing slash, plain `${base}docs/...` concatenation would silently produce `/voron-modsdocs/...`. Stripping any trailing slash from `base` and hardcoding the `/` separator in the template literal makes this correct regardless of `trailingSlash`'s value. Verify the actual rendered `href` values in Task 11.
+
+The `base` declaration must be `export const`, not a bare `const`. MDX's compiler only recognizes a top-level block as code (ESM) if it starts with `import` or `export` — confirmed by compiling both forms through `@mdx-js/mdx`'s `compile()`: a bare `const base = ...;` gets parsed as a markdown paragraph (literally rendered as the text `const base = ...;`), and `base` is then undefined wherever the `Card` `href`s reference it, throwing `base is not defined` at build time. `export const` is recognized as ESM and hoisted above the generated `_createMdxContent` function, where it's reachable via ordinary closure — the `export` keyword itself isn't what makes it accessible, it's what makes MDX treat the line as code instead of prose in the first place.
 
 - [ ] **Step 2: Delete the old Hugo homepage files**
 
