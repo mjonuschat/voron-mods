@@ -12,6 +12,7 @@ export default defineConfig({
       sidebar: [
         { label: 'Guides', items: [{ autogenerate: { directory: 'docs/guides' } }] },
       ],
+      customCss: ['./src/styles/custom.css'],
     }),
   ],
 });

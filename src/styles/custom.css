@@ -1,0 +1,5 @@
+@media (min-width: 50rem) {
+  :root[data-has-sidebar] {
+    --sl-content-width: calc(100% - var(--sl-sidebar-width));
+  }
+}
