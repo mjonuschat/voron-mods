@@ -13,6 +13,20 @@ export default defineConfig({
         { label: 'Guides', items: [{ autogenerate: { directory: 'docs/guides' } }] },
       ],
       customCss: ['./src/styles/custom.css'],
+      head: [
+        {
+          tag: 'link',
+          attrs: { rel: 'mask-icon', href: 'https://mjonuschat.github.io/voron-mods/mask-icon.svg', color: 'white' },
+        },
+        {
+          tag: 'meta',
+          attrs: { property: 'og:image', content: 'https://mjonuschat.github.io/voron-mods/cover.png' },
+        },
+        {
+          tag: 'meta',
+          attrs: { name: 'twitter:image', content: 'https://mjonuschat.github.io/voron-mods/cover.png' },
+        },
+      ],
     }),
   ],
 });
