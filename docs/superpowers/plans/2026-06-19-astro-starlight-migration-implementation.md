@@ -1179,16 +1179,18 @@ find resources -type f
 
 Expected: `content/` finds nothing (every file was removed in Tasks 4-8). `assets/` finds exactly six remaining files: `assets/scss/common/_custom.scss`, `assets/scss/common/_variables-custom.scss`, `assets/jsconfig.json`, `assets/js/custom.js`, `assets/images/.gitkeep`, `assets/svgs/.gitkeep` — all confirmed-empty Doks placeholders, none of them migrated anywhere because none had real content. `resources/_gen/` finds Hugo's generated image-processing and Sass cache (resized favicon/guide-image variants, compiled SCSS) — none of it is hand-authored, all of it is reproducible build output, safe to delete outright. If either `find` shows anything else, stop and figure out what it is before continuing — don't delete something this plan didn't account for.
 
-Separately, run `git status --short resources/` — this repo currently has four untracked files under `resources/_gen/images/` (`favicon_hu_*.png`) sitting alongside the tracked cache files in the same directory. `git rm -r` in Step 2 only removes tracked paths; these four would survive and show up as `??` in Task 11's final clean-tree check. Confirm they match the same "regenerable Hugo image cache" pattern as the tracked files before Step 2 removes them too.
+Separately, run `git status --short hugo_stats.json resources/`. This repo currently has `hugo_stats.json` showing as locally modified (Hugo regenerates it — and rewrites its content — on every build, per `[build.buildStats] enable = true` in `config/_default/hugo.toml`) and four untracked files under `resources/_gen/images/` (`favicon_hu_*.png`) sitting alongside the tracked cache files in the same directory. Plain `git rm` refuses to remove a file with uncommitted modifications, and `git rm -r` only removes tracked paths — so without accounting for both, Step 2 will abort on `hugo_stats.json` and leave the four untracked PNGs behind for Task 11's clean-tree check to catch. Confirm the four PNGs match the same "regenerable Hugo image cache" pattern as the tracked files before Step 2 removes everything.
 
 - [ ] **Step 2: Remove the remaining Hugo/Doks files and directories**
 
 ```bash
-git rm -r config/ netlify.toml hugo_stats.json .hugo_build.lock resources/ layouts/ assets/scss/ assets/jsconfig.json assets/js/custom.js assets/images/.gitkeep assets/svgs/.gitkeep
+git rm -rf config/ netlify.toml hugo_stats.json .hugo_build.lock resources/ layouts/ assets/scss/ assets/jsconfig.json assets/js/custom.js assets/images/.gitkeep assets/svgs/.gitkeep
 git clean -fd resources/
 rmdir assets/js assets/images assets/svgs 2>/dev/null || true
 rmdir content assets 2>/dev/null || true
 ```
+
+`-f` is required because `hugo_stats.json` has local modifications from the last Hugo build — plain `git rm` would otherwise abort the entire command with "the following file has local modifications." This is fine here: the file is being deleted permanently regardless of its current content, not preserved, so there's nothing to lose by forcing it.
 
 `git rm` on individual files (the three `.gitkeep`/`custom.js` removals) doesn't clean up their now-empty parent directories the way `git rm -r` on a whole directory does — without the extra `rmdir` calls for `assets/js`, `assets/images`, `assets/svgs`, the final `rmdir assets` would fail since those three empty directories would still be sitting inside it. `git clean -fd resources/` is needed for the same reason as Task 3's `git clean -fdX public/` — `git rm -r resources/` only deletes the tracked files, leaving the four untracked PNGs from Step 1 (and the now near-empty directory tree they're sitting in) behind on disk; `git clean -fd` removes both the untracked files and the resulting empty directories.
 
