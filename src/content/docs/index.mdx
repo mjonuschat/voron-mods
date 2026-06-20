@@ -1,0 +1,17 @@
+---
+title: "Voron Guides"
+description: "A collection of guides & tutorials for Voron 3D Printers"
+template: splash
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+export const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+A collection of guides & tutorials for Voron 3D Printers
+
+<CardGrid>
+	<LinkCard title="Energy Usage Tracking" href={`${base}/docs/guides/energy-usage-monitoring-tracking/`} description="Step-by-step tutorial to integrate a network-connected power meter with Moonraker, enabling real-time energy consumption monitoring and historical data tracking." />
+	<LinkCard title="Optimized Bed Leveling Macros" href={`${base}/docs/guides/optimized-bed-leveling-macros/`} description="Guide to implementing a two-pass bed leveling approach, consisting of an initial coarse leveling pass for safety and speed, followed by a fine leveling pass for precise accuracy." />
+	<LinkCard title="Automating Z Offset Adjustments" href={`${base}/docs/guides/automating-z-offset-adjustments/`} description="Detailed step-by-step instructions to configure Z offset adjustments for each filament type in your Slicer software, suitable for all Klipper enabled printers." />
+</CardGrid>
