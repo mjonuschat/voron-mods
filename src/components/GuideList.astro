@@ -1,0 +1,48 @@
+---
+import { getCollection } from 'astro:content';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const guides = (await getCollection('docs'))
+  .filter((entry) => entry.id.startsWith('docs/guides/') && entry.id !== 'docs/guides/index')
+  .sort((a, b) => a.data.title.localeCompare(b.data.title));
+
+const hrefFor = (id: string) => `${base}/${id}/`;
+---
+
+<nav aria-label="Guides" class="guide-list">
+  <ol>
+    {
+      guides.map((guide) => (
+        <li>
+          <a href={hrefFor(guide.id)}>{guide.data.title}</a>
+          {guide.data.description && <p>{guide.data.description}</p>}
+        </li>
+      ))
+    }
+  </ol>
+</nav>
+
+<style>
+  .guide-list ol {
+    display: grid;
+    gap: 1rem;
+    list-style: none;
+    padding: 0;
+  }
+
+  .guide-list li {
+    border-inline-start: 3px solid var(--sl-color-accent);
+    padding-inline-start: 1rem;
+  }
+
+  .guide-list a {
+    font-weight: 600;
+    font-size: var(--sl-text-lg);
+  }
+
+  .guide-list p {
+    margin-top: 0.25rem;
+    color: var(--sl-color-gray-3);
+  }
+</style>
