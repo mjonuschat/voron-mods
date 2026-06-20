@@ -505,6 +505,9 @@ web_modules/
 .cache
 .parcel-cache
 
+# Astro
+.astro/
+
 # Next.js build output
 .next
 out

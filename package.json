@@ -1,29 +1,23 @@
 {
   "name": "voron-mods",
   "version": "0.0.0",
-  "description": "Doks theme",
-  "author": "Hyas",
+  "description": "Voron 3D printer guides",
+  "author": "Morton Jonuschat",
   "license": "MIT",
   "scripts": {
-    "create": "hugo new",
-    "dev": "hugo server --disableFastRender --noHTTPCache",
-    "format": "prettier **/** -w -c",
-    "build": "hugo --minify --gc",
-    "preview": "vite preview --outDir public"
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "format": "prettier **/** -w -c"
   },
   "dependencies": {
-    "@hyas/doks-core": "^1.6.1",
-    "@hyas/images": "^3.2.0",
-    "@hyas/inline-svg": "^1.1.0",
-    "@hyas/seo": "^2.3.0",
-    "@tabler/icons": "^3.2.0",
-    "gethyas": "^2.4.2"
+    "@astrojs/starlight": "^0.40.0",
+    "astro": "^6.4.8"
   },
   "devDependencies": {
-    "prettier": "^3.2.5",
-    "vite": "^5.2.10"
+    "prettier": "^3.2.5"
   },
   "engines": {
-    "node": ">=20.11.0"
+    "node": ">=22.12.0"
   }
 }
