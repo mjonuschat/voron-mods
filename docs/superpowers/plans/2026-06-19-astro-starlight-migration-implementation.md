@@ -358,13 +358,13 @@ export const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 A collection of guides & tutorials for Voron 3D Printers
 
 <CardGrid>
-	<Card title="Energy Usage Tracking" icon="rocket" href={`${base}/docs/guides/energy-usage-monitoring/`}>
+	<Card title="Energy Usage Tracking" icon="rocket" href={`${base}/docs/guides/energy-usage-monitoring-tracking/`}>
 		Step-by-step tutorial to integrate a network-connected power meter with Moonraker, enabling real-time energy consumption monitoring and historical data tracking.
 	</Card>
 	<Card title="Optimized Bed Leveling Macros" icon="rocket" href={`${base}/docs/guides/optimized-bed-leveling-macros/`}>
 		Guide to implementing a two-pass bed leveling approach, consisting of an initial coarse leveling pass for safety and speed, followed by a fine leveling pass for precise accuracy.
 	</Card>
-	<Card title="Automating Z Offset Adjustments" icon="rocket" href={`${base}/docs/guides/automatic-z-offset-adjustments/`}>
+	<Card title="Automating Z Offset Adjustments" icon="rocket" href={`${base}/docs/guides/automating-z-offset-adjustments/`}>
 		Detailed step-by-step instructions to configure Z offset adjustments for each filament type in your Slicer software, suitable for all Klipper enabled printers.
 	</Card>
 </CardGrid>
@@ -585,7 +585,7 @@ git commit -m "[TASK] Migrate Optimized Bed Leveling Macros guide"
 ## Task 7: Migrate the Automating Z Offset Adjustments guide
 
 **Files:**
-- Create: `src/content/docs/docs/guides/automatic-z-offset-adjustments.md`
+- Create: `src/content/docs/docs/guides/automating-z-offset-adjustments.md`
 - Create: `src/assets/guides/automatic-z-offset-ajustments/prusaslicer-filament-settings.png`
 - Create: `src/assets/guides/automatic-z-offset-ajustments/mainsail-toolhead-z-offset.png`
 - Delete: `content/docs/guides/automatic-z-offset-adjustments.md`, `assets/images/guides/automatic-z-offset-ajustments/`
@@ -602,7 +602,7 @@ git mv assets/images/guides/automatic-z-offset-ajustments/mainsail-toolhead-z-of
 
 - [ ] **Step 2: Create the migrated guide**
 
-Create `src/content/docs/docs/guides/automatic-z-offset-adjustments.md`:
+Create `src/content/docs/docs/guides/automating-z-offset-adjustments.md`:
 
 ```markdown
 ---
@@ -721,11 +721,11 @@ Run:
 
 ```bash
 npm run build
-ls dist/docs/guides/automatic-z-offset-adjustments/index.html
-grep -c "<img" dist/docs/guides/automatic-z-offset-adjustments/index.html
-grep -o "<details>" dist/docs/guides/automatic-z-offset-adjustments/index.html
-grep -o "starlight-aside--tip\|callout-tip" dist/docs/guides/automatic-z-offset-adjustments/index.html | head -1
-grep -o "printer.cfg" dist/docs/guides/automatic-z-offset-adjustments/index.html | head -1
+ls dist/docs/guides/automating-z-offset-adjustments/index.html
+grep -c "<img" dist/docs/guides/automating-z-offset-adjustments/index.html
+grep -o "<details>" dist/docs/guides/automating-z-offset-adjustments/index.html
+grep -o "starlight-aside--tip\|callout-tip" dist/docs/guides/automating-z-offset-adjustments/index.html | head -1
+grep -o "printer.cfg" dist/docs/guides/automating-z-offset-adjustments/index.html | head -1
 ```
 
 Expected: the guide page exists, the `<img>` count is 2, `<details>` is present, the tip-aside class grep matches something (confirms `:::tip[...]` rendered with type-specific styling, not just as plain text — if neither candidate class name matches, inspect the actual rendered HTML for whatever class Starlight does use and adjust this check), and `printer.cfg` appears (confirms the `title="printer.cfg"` code-block labels survived conversion — Expressive Code renders these as visible frame titles, so this also doubles as a sanity check that the code blocks themselves rendered). Then manually verify in a browser (`npm run preview` or check `dist/` directly) that both images actually load — `astro:assets` rewrites image `src` attributes to hashed, optimized filenames, so confirm the referenced file exists in `dist/_astro/` rather than just trusting the tag count.
@@ -733,14 +733,14 @@ Expected: the guide page exists, the `<img>` count is 2, `<details>` is present,
 - [ ] **Step 5: Commit**
 
 ```bash
-git add -A src/content/docs/docs/guides/automatic-z-offset-adjustments.md src/assets/guides/automatic-z-offset-ajustments/
+git add -A src/content/docs/docs/guides/automating-z-offset-adjustments.md src/assets/guides/automatic-z-offset-ajustments/
 git commit -m "[TASK] Migrate Automating Z Offset Adjustments guide"
 ```
 
 ## Task 8: Migrate the Energy Usage Monitoring guide
 
 **Files:**
-- Create: `src/content/docs/docs/guides/energy-usage-monitoring.md`
+- Create: `src/content/docs/docs/guides/energy-usage-monitoring-tracking.md`
 - Create: `src/assets/guides/energy-usage-monitoring/shelly-mqtt-settings.png`
 - Create: `src/assets/guides/energy-usage-monitoring/mainsail-sensor-data.png`
 - Create: `src/assets/guides/energy-usage-monitoring/mainsail-job-history.png`
@@ -759,7 +759,7 @@ git mv assets/images/guides/energy-usage-monitoring/mainsail-job-history.png src
 
 - [ ] **Step 2: Create the migrated guide**
 
-Create `src/content/docs/docs/guides/energy-usage-monitoring.md`:
+Create `src/content/docs/docs/guides/energy-usage-monitoring-tracking.md`:
 
 ```markdown
 ---
@@ -1048,11 +1048,11 @@ Run:
 
 ```bash
 npm run build
-ls dist/docs/guides/energy-usage-monitoring/index.html
-grep -c "<img" dist/docs/guides/energy-usage-monitoring/index.html
-grep -o "<details>" dist/docs/guides/energy-usage-monitoring/index.html
-grep -o "starlight-aside--caution\|callout-caution" dist/docs/guides/energy-usage-monitoring/index.html | head -1
-grep -o "moonraker.conf" dist/docs/guides/energy-usage-monitoring/index.html | head -1
+ls dist/docs/guides/energy-usage-monitoring-tracking/index.html
+grep -c "<img" dist/docs/guides/energy-usage-monitoring-tracking/index.html
+grep -o "<details>" dist/docs/guides/energy-usage-monitoring-tracking/index.html
+grep -o "starlight-aside--caution\|callout-caution" dist/docs/guides/energy-usage-monitoring-tracking/index.html | head -1
+grep -o "moonraker.conf" dist/docs/guides/energy-usage-monitoring-tracking/index.html | head -1
 ```
 
 Expected: the guide page exists, the `<img>` count is 3, `<details>` is present, the caution-aside class grep matches something (same caveat as Task 6/7 — adjust the candidate class name if neither matches the actual rendered output), and `moonraker.conf` appears (confirms code-block title labels survived). Between Task 6 (note, danger), Task 7 (tip), and this task (caution), all four callout types have now been explicitly verified to render with type-specific styling, not just as plain text. Same manual image-loading check as Task 7.
@@ -1060,7 +1060,7 @@ Expected: the guide page exists, the `<img>` count is 3, `<details>` is present,
 - [ ] **Step 5: Commit**
 
 ```bash
-git add -A src/content/docs/docs/guides/energy-usage-monitoring.md src/assets/guides/energy-usage-monitoring/
+git add -A src/content/docs/docs/guides/energy-usage-monitoring-tracking.md src/assets/guides/energy-usage-monitoring/
 git commit -m "[TASK] Migrate Energy Usage Monitoring guide"
 ```
 
@@ -1225,13 +1225,13 @@ Expected: exits 0.
 - [ ] **Step 2: Verify image src attributes are base-prefixed**
 
 ```bash
-grep -c "<img" dist/docs/guides/automatic-z-offset-adjustments/index.html
-grep -o 'src="/voron-mods/_astro/[^"]*"' dist/docs/guides/automatic-z-offset-adjustments/index.html
-grep -c "<img" dist/docs/guides/energy-usage-monitoring/index.html
-grep -o 'src="/voron-mods/_astro/[^"]*"' dist/docs/guides/energy-usage-monitoring/index.html
+grep -c "<img" dist/docs/guides/automating-z-offset-adjustments/index.html
+grep -o 'src="/voron-mods/_astro/[^"]*"' dist/docs/guides/automating-z-offset-adjustments/index.html
+grep -c "<img" dist/docs/guides/energy-usage-monitoring-tracking/index.html
+grep -o 'src="/voron-mods/_astro/[^"]*"' dist/docs/guides/energy-usage-monitoring-tracking/index.html
 ```
 
-Expected: the `<img>` counts are 2 and 3 (matching Tasks 7/8), and the `src="/voron-mods/_astro/..."` grep returns that many matches on each page. Don't grep for the page's own slug (e.g. "automatic-z-offset") inside the `src` value — `astro:assets` hashes filenames from the *image's* own basename (`prusaslicer-filament-settings.<hash>.png`, etc.), which has nothing to do with the page it's embedded on, so a slug-based grep would never match regardless of whether base-prefixing actually worked.
+Expected: the `<img>` counts are 2 and 3 (matching Tasks 7/8), and the `src="/voron-mods/_astro/..."` grep returns that many matches on each page. Don't grep for the page's own slug (e.g. "automating-z-offset") inside the `src` value — `astro:assets` hashes filenames from the *image's* own basename (`prusaslicer-filament-settings.<hash>.png`, etc.), which has nothing to do with the page it's embedded on, so a slug-based grep would never match regardless of whether base-prefixing actually worked.
 
 - [ ] **Step 3: Verify the homepage card links are base-prefixed**
 
@@ -1253,7 +1253,7 @@ Expected: the favicon `href` starts with `/voron-mods/favicon.svg` (Starlight's 
 - [ ] **Step 5: Verify URL structure matches the current site exactly**
 
 ```bash
-ls dist/index.html dist/privacy/index.html dist/docs/index.html dist/docs/resources/index.html dist/docs/guides/index.html dist/docs/guides/optimized-bed-leveling-macros/index.html dist/docs/guides/automatic-z-offset-adjustments/index.html dist/docs/guides/energy-usage-monitoring/index.html
+ls dist/index.html dist/privacy/index.html dist/docs/index.html dist/docs/resources/index.html dist/docs/guides/index.html dist/docs/guides/optimized-bed-leveling-macros/index.html dist/docs/guides/automating-z-offset-adjustments/index.html dist/docs/guides/energy-usage-monitoring-tracking/index.html
 ```
 
 Expected: all eight files exist — this is the full page inventory from the spec, confirming every page landed at its intended URL with no extras or omissions.
@@ -1264,7 +1264,7 @@ Expected: all eight files exist — this is the full page inventory from the spe
 grep -o 'href="[^"]*docs/guides/[a-z-]*/"' dist/docs/guides/index.html | sort -u
 ```
 
-Expected: three sidebar links, one per guide. Alphabetically by filename, the order should be `automatic-z-offset-adjustments`, `energy-usage-monitoring`, `optimized-bed-leveling-macros` — confirm the printed order matches (autogenerate sorts by filename, so this is really checking that all three guide files were picked up, not that some unrelated sort logic kicked in).
+Expected: three sidebar links, one per guide. Alphabetically by filename, the order should be `automating-z-offset-adjustments`, `energy-usage-monitoring-tracking`, `optimized-bed-leveling-macros` — confirm the printed order matches (autogenerate sorts by filename, so this is really checking that all three guide files were picked up, not that some unrelated sort logic kicked in).
 
 - [ ] **Step 7: Rebuild without the base override for local dev sanity, then report final status**
 
