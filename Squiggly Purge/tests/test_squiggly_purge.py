@@ -114,3 +114,61 @@ def test_squish_factor_out_of_range_aborts():
     for bad in (0, -0.5, 1.2):
         with pytest.raises(RaiseError, match="SQUISH_FACTOR"):
             render({"SQUISH_FACTOR": bad})
+
+
+# Solver-mode reference values:
+# one-period arc length = 11.478695 mm (single fresh period; the macro's
+# truncated TAU + float modulo make later periods drift slightly longer,
+# so the solver's estimate errs thin — width never exceeds the request)
+# filament area = 2.405280 mm^2
+
+
+def test_line_width_solver_picks_periods():
+    # gap = 0.3*0.8 = 0.24; cs = 0.8*0.24 = 0.192 mm^2
+    # required length = 15*2.40528/0.192 = 187.9 mm -> ceil(187.9/11.478695) = 17 periods
+    gcode, _ = render({"LINE_WIDTH": 0.8, "LINE_HEIGHT": 0.3, "PURGE_LENGTH": 15})
+    moves = extrusion_moves(gcode)
+    assert len(moves) == 17 * 16
+    assert math.isclose(total_e(gcode), 15.0, abs_tol=1e-6)  # full purge kept
+    # ceil rounding means slightly MORE path, so actual width is <= request
+    width = 15 * 2.40528 / (0.24 * path_length(gcode))
+    assert 0.75 < width <= 0.8 + 1e-6
+
+
+def test_line_width_periods_cap_honors_width_and_reduces_purge():
+    gcode, msgs = render(
+        {"LINE_WIDTH": 0.8, "LINE_HEIGHT": 0.3, "PURGE_LENGTH": 15, "PERIODS": 10}
+    )
+    assert len(extrusion_moves(gcode)) == 10 * 16
+    # purge = 0.192 * 10 * 11.478695 / 2.40528 = 9.163 mm of filament
+    assert math.isclose(total_e(gcode), 9.163, abs_tol=0.01)
+    assert any("reducing purge" in m and "PERIODS" in m for m in msgs)
+
+
+def test_line_width_bed_space_caps_periods():
+    # 120 mm bed, start X=5 -> 115 mm of travel space -> 23 periods max;
+    # the solver wants ceil(50*2.40528/0.12/11.478695) = 88.
+    printer = default_printer(bed=(120.0, 120.0))
+    gcode, msgs = render(
+        {"LINE_WIDTH": 0.5, "LINE_HEIGHT": 0.3, "PURGE_LENGTH": 50}, printer
+    )
+    assert len(extrusion_moves(gcode)) == 23 * 16
+    assert math.isclose(total_e(gcode), 13.172, abs_tol=0.01)
+    assert any("reducing purge" in m and "bed space" in m for m in msgs)
+
+
+def test_line_width_solver_reports_geometry():
+    _, msgs = render({"LINE_WIDTH": 0.8, "LINE_HEIGHT": 0.3, "PURGE_LENGTH": 15})
+    assert any("periods" in m and "wide bead" in m for m in msgs)
+
+
+def test_line_width_validation():
+    with pytest.raises(RaiseError, match="LINE_WIDTH"):
+        render({"LINE_WIDTH": 0})
+
+
+def test_line_width_absent_keeps_legacy_output():
+    # The whole legacy suite is the real guarantee; this is a direct sentinel.
+    gcode, _ = render()
+    assert len(extrusion_moves(gcode)) == 160
+    assert math.isclose(total_e(gcode), 100.0, abs_tol=1e-6)
