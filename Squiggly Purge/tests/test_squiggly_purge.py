@@ -14,7 +14,8 @@ from harness import (
 
 # Reference values, derived from the macro's own math with default params:
 # filament area = 3.14159 * 0.875^2 = 2.405280 mm^2
-# discrete path length: 11.50685 mm per period (AMPLITUDE=5, PERIOD_LENGTH=5, STEPS=16)
+# discrete path length: 115.068 mm total over 10 default periods (per-period arc
+# drifts 11.4787-11.5725 mm; see the solver-mode reference notes further down)
 
 
 def test_default_invocation_geometry():
@@ -82,8 +83,9 @@ def test_ratio_up_to_0_75_allowed():
 
 def test_ratio_above_0_75_aborts_with_actionable_message():
     # width = 36.08 / (0.6 * 230.14) = 0.261 mm -> h/w = 2.3
-    with pytest.raises(RaiseError, match="Decrease LINE_HEIGHT"):
+    with pytest.raises(RaiseError, match="Decrease LINE_HEIGHT") as excinfo:
         render({"PURGE_LENGTH": 15, "LINE_HEIGHT": 0.6, "PERIOD_LENGTH": 5, "PERIODS": 20})
+    assert "max_extrude_cross_section" not in str(excinfo.value)
 
 
 def test_max_cs_clamped_abort_names_the_real_culprit():
@@ -172,3 +174,25 @@ def test_line_width_absent_keeps_legacy_output():
     gcode, _ = render()
     assert len(extrusion_moves(gcode)) == 160
     assert math.isclose(total_e(gcode), 100.0, abs_tol=1e-6)
+
+
+def test_solver_rejects_too_narrow_width_request():
+    # gap 0.24 / width 0.325 = 0.738: nominally below 0.75, but ceil rounding and
+    # period drift would push the actual ratio over - rejected up front with
+    # advice naming the solver knobs.
+    with pytest.raises(RaiseError, match="Increase LINE_WIDTH"):
+        render({"LINE_WIDTH": 0.325, "LINE_HEIGHT": 0.3})
+
+
+def test_solver_clamps_width_to_max_cross_section():
+    # 0.98*0.64/0.48 = 1.3067 mm max width; cs = 0.62726 mm^2
+    # required length = 50*2.40528/0.62726 = 191.75 -> ceil(191.75/11.478695) = 17
+    printer = default_printer(max_cross_section="0.64")
+    gcode, msgs = render(
+        {"LINE_WIDTH": 3.5, "LINE_HEIGHT": 0.6, "PURGE_LENGTH": 50}, printer
+    )
+    assert len(extrusion_moves(gcode)) == 17 * 16
+    assert math.isclose(total_e(gcode), 50.0, abs_tol=1e-6)  # full purge preserved
+    assert any("clamping the width" in m for m in msgs)
+    width = 50 * 2.40528 / (0.48 * path_length(gcode))
+    assert width <= 1.3067 + 1e-6
