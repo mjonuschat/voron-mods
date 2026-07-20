@@ -96,3 +96,21 @@ def test_max_cs_clamped_abort_names_the_real_culprit():
             {"PURGE_LENGTH": 50, "LINE_HEIGHT": 0.7, "PERIOD_LENGTH": 10, "PERIODS": 10},
             printer,
         )
+
+
+def test_squish_factor_default_leaves_gcode_unchanged():
+    assert render()[0] == render({"SQUISH_FACTOR": 0.8})[0]
+
+
+def test_squish_factor_changes_only_the_z_gap():
+    base, _ = render()
+    flat, _ = render({"SQUISH_FACTOR": 1.0})
+    assert extrusion_moves(base) == extrusion_moves(flat)  # legacy math untouched
+    assert z_gap(base) == pytest.approx(0.48)
+    assert z_gap(flat) == pytest.approx(0.6)
+
+
+def test_squish_factor_out_of_range_aborts():
+    for bad in (0, -0.5, 1.2):
+        with pytest.raises(RaiseError, match="SQUISH_FACTOR"):
+            render({"SQUISH_FACTOR": bad})
