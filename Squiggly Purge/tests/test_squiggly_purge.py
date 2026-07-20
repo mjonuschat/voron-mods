@@ -39,16 +39,17 @@ def test_start_position_and_direction():
     assert all(x > 0 for x, _, _, _ in moves)  # +X travel from the default corner
 
 
-def test_max_cs_correction_then_ratio_abort():
-    # 50 mm purge at h=0.6 over 10x10 mm periods: cross-section 0.823 mm^2
-    # exceeds Klipper's default 0.64, the correction clamps width to
-    # 0.98*0.64/0.6 = 1.045 mm, then h/w = 0.574 >= 0.5 aborts.
+def test_max_cs_correction_reduces_purge():
+    # Same invocation as before: correction clamps purge to
+    # 0.98 * 0.64 * 146.165 / 2.40528 = 38.11 mm of filament, and with the
+    # relaxed 0.75 threshold the corrected line (h/w = 0.574) now prints.
     printer = default_printer(max_cross_section="0.64")
-    with pytest.raises(RaiseError, match="too thin"):
-        render(
-            {"PURGE_LENGTH": 50, "LINE_HEIGHT": 0.6, "PERIOD_LENGTH": 10, "PERIODS": 10},
-            printer,
-        )
+    gcode, msgs = render(
+        {"PURGE_LENGTH": 50, "LINE_HEIGHT": 0.6, "PERIOD_LENGTH": 10, "PERIODS": 10},
+        printer,
+    )
+    assert math.isclose(total_e(gcode), 38.11, abs_tol=0.01)
+    assert any("Corrected the prime_line_purge_distance" in m for m in msgs)
 
 
 def test_wide_flat_line_passes_ratio_check():
@@ -68,3 +69,30 @@ def test_missing_max_cs_falls_back_to_klipper_default():
 def test_steps_periods_validation():
     with pytest.raises(RaiseError, match="STEPS and PERIODS"):
         render({"STEPS": 0})
+
+
+def test_ratio_up_to_0_75_allowed():
+    # 30 mm purge at h=0.4 over 20x5 periods: width 0.784 mm, h/w = 0.510.
+    # Aborted under the old 0.5 rule; a perfectly good thin line under 0.75.
+    gcode, _ = render(
+        {"PURGE_LENGTH": 30, "LINE_HEIGHT": 0.4, "PERIOD_LENGTH": 5, "PERIODS": 20}
+    )
+    assert math.isclose(total_e(gcode), 30.0, abs_tol=1e-6)
+
+
+def test_ratio_above_0_75_aborts_with_actionable_message():
+    # width = 36.08 / (0.6 * 230.14) = 0.261 mm -> h/w = 2.3
+    with pytest.raises(RaiseError, match="Decrease LINE_HEIGHT"):
+        render({"PURGE_LENGTH": 15, "LINE_HEIGHT": 0.6, "PERIOD_LENGTH": 5, "PERIODS": 20})
+
+
+def test_max_cs_clamped_abort_names_the_real_culprit():
+    # h=0.7 at max_cs=0.64: correction clamps width to 0.98*0.64/0.7 = 0.896,
+    # h/w = 0.781 >= 0.75. The old message said "increase purge distance" —
+    # the opposite of helpful, since the correction just reduced it.
+    printer = default_printer(max_cross_section="0.64")
+    with pytest.raises(RaiseError, match="max_extrude_cross_section"):
+        render(
+            {"PURGE_LENGTH": 50, "LINE_HEIGHT": 0.7, "PERIOD_LENGTH": 10, "PERIODS": 10},
+            printer,
+        )
