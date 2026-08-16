@@ -27,10 +27,12 @@ A Klipper macro that draws a sinusoidal purge/prime line before prints to prepar
 | Parameter | Default | Description |
 |---|---|---|
 | `FLOWRATE` | 10.0 | Volumetric flow rate (mm³/s) |
-| `AMPLITUDE` | 5.0 | Peak-to-peak width of the sine wave (mm) |
+| `AMPLITUDE` | 5.0 | Non-negative peak-to-peak width of the sine wave; must fit the perpendicular axis (mm) |
 | `PERIOD_LENGTH` | 5.0 | Length of one sine cycle along the travel direction (mm) |
 | `LINE_MARGIN` | 10.0 | Clearance from print area in adaptive mode (mm) |
 | `SQUISH_FACTOR` | 0.8 | Fraction of `LINE_HEIGHT` used as the actual nozzle gap, pressing the line into the bed |
+| `ADAPTIVE_X_OFFSET` | 0.0 | Additional X adjustment after adaptive positioning (mm) |
+| `ADAPTIVE_Y_OFFSET` | 0.0 | Additional Y adjustment after adaptive positioning (mm) |
 
 ### Rarely changed
 
@@ -72,3 +74,5 @@ When `ADAPTIVE_MODE=1`, the macro positions the purge line near the print area u
 2. Klipper's `[exclude_object]` polygon data
 
 The line is mirrored across the bed center when the print area is on the opposite side, and clamped to stay within bed boundaries.
+
+`ADAPTIVE_X_OFFSET` and `ADAPTIVE_Y_OFFSET` nudge the computed adaptive position, only when adaptive coordinates were found. The result is clamped to the toolhead limits, with room reserved for the amplitude.
