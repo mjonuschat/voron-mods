@@ -5,31 +5,31 @@ description: "How to use a dual pass leveling approach for Z_TILT_ADJUST or QUAD
 
 ## Introduction
 
-These optimized macros strike a balance between safety and time efficiency by combining the benefits of large and small Z-Hop values. The leveling procedure is divided into two passes:
+These macros level the bed in two passes, one with a large Z-Hop and one with a small Z-Hop. The large hop keeps the nozzle from scratching the print surface, and the small hop saves time.
 
-Pass 1: Initial Coarse Leveling
+**Pass 1, initial coarse leveling**
 
-- Utilizes a large Z-Hop value to prevent scratching the print surface
-- Minimizes probing samples to quickly determine bed position
-- Relaxes tolerance requirements to ensure bed levelness within 1mm
+- Uses a large Z-Hop value so the nozzle does not scratch the print surface
+- Takes as few probe samples as possible to find the bed position quickly
+- Relaxes the tolerance, which still levels the bed to within 1mm
 
-Pass 2: Fine Leveling and Accuracy
+**Pass 2, fine leveling and accuracy**
 
-- Employs normal settings for accuracy and retries
-- Reduces Z-Hop distance, leveraging the knowledge that the bed is already approximately level
+- Uses the normal settings for accuracy and retries
+- Uses a smaller Z-Hop, because the bed is already approximately level
 
-This two-pass approach ensures a efficient and safe leveling process, optimizing time savings while maintaining accuracy.
+Together the two passes level the bed safely and quickly without losing accuracy.
 
-:::danger[Important Compatibility Notice]
-These macros are not compatible with dockable probes, as they override the default bed leveling functionality. Using these macros with dockable probes may result in unexpected behavior or errors.
+:::danger[Compatibility]
+These macros do not work with dockable probes, because they override the default bed leveling command. Using them with a dockable probe may cause errors or unexpected behavior.
 :::
 
 ## QUAD_GANTRY_LEVEL (Voron 2.4)
 
-This macro renames and extends the existing QUAD_GANTRY_LEVEL command, implementing the two-pass leveling process. By replacing the default functionality, no additional modifications to the configuration are required. The macro executes the following steps:
+This macro renames the existing QUAD_GANTRY_LEVEL command and wraps it in the two-pass process. Because it replaces the default command, you do not need to change anything else in your configuration. It runs two steps:
 
-Pass 1: Initial Coarse Leveling - Lifts the head to 10mm<br>
-Pass 2: Fine Leveling - Lifts the head to 2mm
+1. Level coarsely, lifting the head to 10mm
+1. Level finely, lifting the head to 2mm
 
 ```ini title="printer.cfg"
 [gcode_macro QUAD_GANTRY_LEVEL]
@@ -43,10 +43,10 @@ gcode:
 
 ## Z_TILT_ADJUST (Voron Trident)
 
-This macro renames and extends the existing Z_TILT_ADJUST command, implementing the two-pass leveling process. By replacing the default functionality, no additional modifications to the configuration are required. The macro executes the following steps:
+This macro renames the existing Z_TILT_ADJUST command and wraps it in the two-pass process. Because it replaces the default command, you do not need to change anything else in your configuration. It runs two steps:
 
-Pass 1: Initial Coarse Leveling - Moves bed down by 10mm<br>
-Pass 2: Fine Leveling - Moves bed down by 2mm
+1. Level coarsely, moving the bed down by 10mm
+1. Level finely, moving the bed down by 2mm
 
 ```ini title="printer.cfg"
 [gcode_macro Z_TILT_ADJUST]
@@ -59,13 +59,13 @@ gcode:
 ```
 
 :::note
-Printers equipped with lead screws tend to exhibit reduced bed and gantry sagging, minimizing the impact of these issues. As a result, the advantages of the two-pass leveling approach is less significant.
+Printers with lead screws tend to have less bed and gantry sagging, so the two-pass approach helps less on them.
 :::
 
-## Optional Tuning Parameters
+## Optional tuning parameters
 
-The following parameters in the macros can be adjusted to futher optimize the leveling process:
+You can adjust these parameters in the macros to tune the leveling process further:
 
-- **HORIZONTAL_MOVE_Z**: Specifies the intermediate move height (in mm) between probes
-- **RETRY_TOLERANCE**: Defines the maximum allowable deviation between the largest and smallest probed points, triggering retry leveling if exceeded
-- **SAMPLES**: Specifies the number of probe samples to use per leveling point
+- **HORIZONTAL_MOVE_Z**: The height (in mm) the toolhead or bed moves between probe points
+- **RETRY_TOLERANCE**: The largest allowed difference between the highest and lowest probed points. Leveling retries if the difference is larger
+- **SAMPLES**: The number of probe samples taken per leveling point
