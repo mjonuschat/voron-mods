@@ -4,7 +4,7 @@ import starlight from '@astrojs/starlight';
 export default defineConfig({
   integrations: [
     starlight({
-      title: 'Voron Guides',
+      title: 'Klipper Guides',
       favicon: '/favicon.svg',
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/mjonuschat/voron-mods' },
