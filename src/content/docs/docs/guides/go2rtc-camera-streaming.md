@@ -5,7 +5,7 @@ description: "How to install go2rtc for a Klipper printer camera and configure t
 
 ## Introduction
 
-[go2rtc](https://github.com/AlexxIT/go2rtc) is a lightweight camera streaming application that can expose a printer camera through WebRTC. For printer monitoring, this can provide a lower-latency stream than a traditional MJPEG setup while still integrating cleanly with browser-based printer UIs.
+[go2rtc](https://github.com/AlexxIT/go2rtc) is a lightweight camera streaming application that can serve a printer camera over WebRTC. It usually has lower latency than a traditional MJPEG setup and works with browser-based printer UIs.
 
 This guide installs go2rtc on a Raspberry Pi OS based printer host, configures a USB camera stream named `chamber`, starts go2rtc automatically with systemd, and adds the stream to Mainsail and Fluidd.
 
@@ -16,12 +16,12 @@ By the end, you will have:
 - A `go2rtc` systemd service that starts on boot
 - A camera entry in Mainsail or Fluidd
 
-:::note[Camera Device Access]
-Crowsnest, camera-streamer, ustreamer, mjpg-streamer, or another webcam service may already be using the camera device. A V4L2 USB camera can usually be opened by only one process at a time. If another service is already using `/dev/video0`, stop or reconfigure that service before testing go2rtc with the same device.
+:::note[Camera device access]
+Crowsnest, camera-streamer, ustreamer, mjpg-streamer or another webcam service may already be using the camera. Usually only one process at a time can open a V4L2 USB camera. If another service is using `/dev/video0`, stop or reconfigure it before testing go2rtc with the same device.
 :::
 
-:::caution[Supported OS Baseline]
-This guide targets Raspberry Pi OS Bookworm and Trixie. Older Raspberry Pi OS releases such as Bullseye, Buster, Stretch, and Jessie are legacy baselines for this guide. If your printer host is running an older release, upgrade or re-image to Bookworm or Trixie before following these steps.
+:::caution[Supported OS]
+This guide targets Raspberry Pi OS Bookworm and Trixie. Older releases such as Bullseye, Buster, Stretch and Jessie are not supported. If your printer host runs one of them, upgrade or re-image to Bookworm or Trixie before following these steps.
 :::
 
 ## Prerequisites
@@ -30,11 +30,11 @@ This guide targets Raspberry Pi OS Bookworm and Trixie. Older Raspberry Pi OS re
 - SSH access to the printer host
 - A USB camera available as a Linux video device, usually `/dev/video0`
 - A recent Mainsail or Fluidd installation
-- Browser access to the printer host on the same local network
+- A browser on the same local network as the printer host
 
 ## Install FFmpeg
 
-The example stream uses go2rtc's FFmpeg source to read the USB camera and produce an H.264 WebRTC-compatible stream. Install FFmpeg before configuring go2rtc.
+The example stream uses go2rtc's FFmpeg source to read the USB camera and produce an H.264 stream that WebRTC can carry. Install FFmpeg before configuring go2rtc.
 
 1. Update the APT package index:
 
@@ -58,9 +58,9 @@ The example stream uses go2rtc's FFmpeg source to read the USB camera and produc
 
 ## Install go2rtc
 
-Install the go2rtc binary in `/home/pi/go2rtc`. The commands below use the `go2rtc_linux_arm64` release asset, which is the correct binary for 64-bit Raspberry Pi OS.
+Install the go2rtc binary in `/home/pi/go2rtc`. The commands below use the `go2rtc_linux_arm64` release asset, which is the right binary for 64-bit Raspberry Pi OS.
 
-:::note[Choosing the Correct Binary]
+:::note[Choosing the binary]
 Use `go2rtc_linux_arm64` for 64-bit Raspberry Pi OS and `go2rtc_linux_arm` for 32-bit Raspberry Pi OS. Other builds are available on the [go2rtc releases page](https://github.com/AlexxIT/go2rtc/releases).
 :::
 
@@ -91,9 +91,9 @@ Use `go2rtc_linux_arm64` for 64-bit Raspberry Pi OS and `go2rtc_linux_arm` for 3
 
    The permissions should include executable bits, such as `-rwxr-xr-x`.
 
-## Find Your Camera Device
+## Find your camera device
 
-Before writing the go2rtc stream configuration, identify the Linux video device for your camera and confirm one supported capture mode.
+Before writing the stream configuration, find the Linux video device for your camera and pick one capture mode it supports.
 
 1. List video devices:
 
@@ -115,7 +115,7 @@ Before writing the go2rtc stream configuration, identify the Linux video device 
    v4l2-ctl --list-devices
    ```
 
-   Use this output to choose the correct `video=` path for `go2rtc.yaml`. If multiple cameras are connected, `/dev/video0` can change after reboot or after reconnecting USB devices. Stable multi-camera naming with persistent device paths or udev rules is outside the scope of this guide.
+   Use this output to choose the `video=` path for `go2rtc.yaml`. If several cameras are connected, `/dev/video0` can change after a reboot or after reconnecting USB devices. Persistent device paths and udev rules are outside the scope of this guide.
 
 1. List the selected camera's supported formats and resolutions:
 
@@ -125,7 +125,7 @@ Before writing the go2rtc stream configuration, identify the Linux video device 
 
    If your camera is not `/dev/video0`, replace `/dev/video0` with the device path from the previous step. Use one reported format and resolution for `input_format` and `video_size` in `go2rtc.yaml`.
 
-## Configure a Camera Stream
+## Configure a camera stream
 
 Create `/home/pi/go2rtc/go2rtc.yaml` with a stream named `chamber`.
 
@@ -165,19 +165,19 @@ Create `/home/pi/go2rtc/go2rtc.yaml` with a stream named `chamber`.
      chamber: ffmpeg:device?video=/dev/video0&input_format=yuyv422&video_size=1280x720#video=h264#hardware
    ```
 
-The `chamber` stream reads `/dev/video0` as a V4L2 camera, requests `yuyv422` input at `1280x720`, and asks FFmpeg/go2rtc to produce H.264 video. The `chamber` stream name is used later in go2rtc, Mainsail, and Fluidd.
+The `chamber` stream reads `/dev/video0` as a V4L2 camera, requests `yuyv422` input at `1280x720`, and asks FFmpeg/go2rtc to produce H.264 video. Later steps use the stream name `chamber` in go2rtc, Mainsail and Fluidd.
 
-:::caution[Hardware H.264 Encoding]
-The `#hardware` option depends on hardware and FFmpeg/go2rtc support. Raspberry Pi 4 lists H.264 encode support in its product brief. Raspberry Pi 5 lists HEVC decode support, but not H.264 encode. If `#hardware` causes startup errors or unusable CPU/video behavior, remove `#hardware` and retest. If your camera can already provide H.264 directly, consider using a source that can be copied with `#video=copy` instead of transcoding.
+:::caution[Hardware H.264 encoding]
+The `#hardware` option depends on hardware and FFmpeg/go2rtc support. The Raspberry Pi 4 product brief lists H.264 encode support. The Raspberry Pi 5 product brief lists HEVC decode support but not H.264 encode. If `#hardware` causes startup errors or unusable CPU or video behavior, remove it and retest. If your camera can already provide H.264, consider a source you can pass through with `#video=copy` instead of transcoding.
 :::
 
-:::note[Additional Cameras]
-To add another camera, duplicate the `chamber:` entry under `streams:` with a new stream name and device path, such as `nozzle: ...video=/dev/video1...`. Each camera needs a supported format and resolution, and each device must not already be held by another process.
+:::note[Additional cameras]
+To add another camera, duplicate the `chamber:` entry under `streams:` with a new stream name and device path, such as `nozzle: ...video=/dev/video1...`. Each camera needs a supported format and resolution, and no other process may be using its device.
 :::
 
 ## Test go2rtc
 
-Before creating the systemd service, run go2rtc in the foreground so configuration errors are visible immediately.
+Before creating the systemd service, run go2rtc in the foreground so configuration errors show up immediately.
 
 1. Start go2rtc manually:
 
@@ -200,9 +200,9 @@ Common errors at this stage:
 - `permission denied`: the binary is not executable, or the camera device permissions are wrong.
 - `no such file or directory`: the binary path, config path, or camera path is wrong.
 - FFmpeg format errors: `input_format` or `video_size` is not supported by the camera.
-- Hardware encoder errors: remove `#hardware` from the stream line and test again.
+- For hardware encoder errors, remove `#hardware` from the stream line and test again.
 
-## Start go2rtc on Boot
+## Start go2rtc on boot
 
 Create a systemd service so go2rtc starts automatically when the printer host boots.
 
@@ -234,8 +234,8 @@ Create a systemd service so go2rtc starts automatically when the printer host bo
    WantedBy=multi-user.target
    ```
 
-:::note[Service User]
-This service runs as `root` to avoid inconsistent USB camera permissions on printer hosts. Advanced users can run go2rtc as a less-privileged service user if they also configure the required video-device permissions.
+:::note[Service user]
+This service runs as `root` to avoid inconsistent USB camera permissions on printer hosts. You can run go2rtc as a less-privileged user if you also set up the required video device permissions.
 :::
 
 1. Enable the service using the absolute service-file path:
@@ -280,8 +280,8 @@ Mainsail includes a `WebRTC (go2rtc)` webcam service for go2rtc streams.
 
 The `src=chamber` parameter must match the stream name in `go2rtc.yaml`.
 
-:::caution[HTTPS and Mixed Content]
-If you access Mainsail over HTTPS, the browser may block an HTTP camera stream as mixed content. This usually appears as a blank camera panel. HTTPS, reverse proxy, and remote-access setup are outside the scope of this guide.
+:::caution[HTTPS and mixed content]
+If you access Mainsail over HTTPS, the browser may block an HTTP camera stream as mixed content. This usually shows as a blank camera panel. HTTPS, reverse proxy and remote access setup are outside the scope of this guide.
 :::
 
 ## Configure Fluidd
@@ -304,7 +304,7 @@ Fluidd field labels may vary by version. The required values are the go2rtc WebU
 
 ## Troubleshooting
 
-### Check go2rtc Service State
+### Check go2rtc service state
 
 Use systemd to confirm whether go2rtc is running:
 
@@ -318,7 +318,7 @@ If the service is not active, inspect the logs:
 sudo journalctl -u go2rtc -f
 ```
 
-### Confirm the Camera Device Path
+### Confirm the camera device path
 
 List available video devices:
 
@@ -328,7 +328,7 @@ ls -l /dev/video*
 
 If your camera is not `/dev/video0`, update the `video=` parameter in `go2rtc.yaml`.
 
-### Confirm the Camera Format and Resolution
+### Confirm the camera format and resolution
 
 List supported camera modes:
 
@@ -338,7 +338,7 @@ ffmpeg -f v4l2 -list_formats all -i /dev/video0
 
 If the configured `input_format` or `video_size` is not listed, update the stream line to use a supported mode.
 
-### Check for Another Process Using the Camera
+### Check for another process using the camera
 
 Check whether another service already has the camera open:
 
@@ -348,7 +348,7 @@ sudo fuser /dev/video0
 
 If another process is listed, stop or reconfigure that service before starting go2rtc with the same device.
 
-### Remove Hardware Encoding
+### Remove hardware encoding
 
 If go2rtc starts but the stream fails, or FFmpeg reports hardware encoder errors, remove `#hardware` from the stream line and restart go2rtc:
 
@@ -363,7 +363,7 @@ Then restart the service:
 sudo systemctl restart go2rtc
 ```
 
-### Check Browser and Network Access
+### Check browser and network access
 
 Open the go2rtc WebUI directly:
 
@@ -371,9 +371,9 @@ Open the go2rtc WebUI directly:
 http://<printer-ip>:1984
 ```
 
-If the WebUI does not load, confirm the printer host IP address and check that your browser is on the same local network.
+If the WebUI does not load, check the printer host IP address and that your browser is on the same local network.
 
-## Further Reading
+## Further reading
 
 - [go2rtc releases](https://github.com/AlexxIT/go2rtc/releases)
 - [go2rtc README](https://github.com/AlexxIT/go2rtc)
