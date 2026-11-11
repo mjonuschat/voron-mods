@@ -85,7 +85,7 @@ In your slicer, open Filament Settings and select the Custom G-code entry (highl
 SET_GCODE_OFFSET Z_ADJUST=0.3
 ```
 
-![PrusaSlicer Filament Settings](../../../../assets/guides/automatic-z-offset-ajustments/prusaslicer-filament-settings.png)
+![PrusaSlicer Filament Settings](../../../../assets/guides/automatic-z-offset-adjustments/prusaslicer-filament-settings.png)
 
 This uses `SET_GCODE_OFFSET` again, but with the `Z_ADJUST` parameter instead of the `Z` parameter used in `PRINT_END`. `Z` sets the offset to the given value. `Z_ADJUST` adds the given value to the current offset. For example, `SET_GCODE_OFFSET Z=-0.2` followed by `SET_GCODE_OFFSET Z_ADJUST=0.3` gives a Z offset of **0.1**. This is why the offset must be reset after each print.
 
@@ -96,7 +96,7 @@ To check that the adjustment is applied:
 1. Slice and start a new print.
 2. Watch the Z offset while the printer prepares the print. If the configuration is correct, the web UI shows the expected Z offset in the Toolhead card, as in the screenshot below:
 
-   ![Mainsail Toolhead Z-Offset](../../../../assets/guides/automatic-z-offset-ajustments/mainsail-toolhead-z-offset.png)
+   ![Mainsail Toolhead Z-Offset](../../../../assets/guides/automatic-z-offset-adjustments/mainsail-toolhead-z-offset.png)
 
 ## Further reading
 
