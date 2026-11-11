@@ -5,37 +5,41 @@ description: "How to track energy consumption of print jobs using a Shelly power
 
 ## Introduction
 
-Moonraker's extended data collection capabilities enable seamless integration with additional sensor sources, including power meters. This feature allows for the tracking of energy consumption data within Moonraker's job history component. Leveraging energy monitors like the Shelly 1PM series, you can gain insights into the energy usage per print job. This guide provides a step-by-step walkthrough for setting up a MQTT server to facilitate data exchange between Shelly and Moonraker, as well as configuring Moonraker to poll and store energy consumption data. Additionally, this guide covers the configuration of Mainsail and Moonraker sensors to track energy usage in the job history.
+Moonraker can collect data from additional sensors, including power meters, and store it in its job history. With an energy monitor such as the Shelly 1PM series, you can see how much energy each print job used. This guide covers:
+
+- Setting up an MQTT server so the Shelly and Moonraker can exchange data.
+- Configuring Moonraker to poll and store the energy data.
+- Configuring Moonraker sensors so Mainsail shows energy usage in the job history.
 
 ## Prerequisites
 
-- A power meter or sensor capable of publishing measurements to an MQTT server is required. Compatible devices include the Shelly PM series (e.g., [Shelly 1PM Pro](https://www.shelly.com/en/products/shop/shelly-pro-1pm) or [Shelly 1PM Mini](https://www.shelly.com/en/products/shop/shelly-1-pm-mini-gen3)) and [Tasmota](https://tasmota.github.io/docs/)-based devices. Please note that device installation is not covered in this guide.
-- The power meter must be configured to operate on the same network as the Raspberry Pi that controls your printer to allow communication and data exchange.
-- A recent version of Mainsail installation (minimum version 2.12.0) is also required.
+- A power meter or sensor that can publish measurements to an MQTT server. Compatible devices include the Shelly PM series (for example [Shelly 1PM Pro](https://www.shelly.com/en/products/shop/shelly-pro-1pm) or [Shelly 1PM Mini](https://www.shelly.com/en/products/shop/shelly-1-pm-mini-gen3)) and [Tasmota](https://tasmota.github.io/docs/)-based devices. This guide does not cover installing the device.
+- The power meter must be on the same network as the Raspberry Pi that controls your printer.
+- Mainsail 2.12.0 or newer.
 
 :::note
-This guide assumes the use of a Shelly 1PM device. Please ensure your device is compatible and properly installed before proceeding.
+This guide assumes a Shelly 1PM device. Make sure your device is compatible and installed before you continue.
 :::
 
-## MQTT Server
+## MQTT server
 
-MQTT (Message Queuing Telemetry Transport) is a lightweight, machine-to-machine communication protocol that enables Internet of Things (IoT) components to exchange messages. In this application, the Powermeter utilizes MQTT to periodically publish measurement data, while Moonraker subscribes to these messages to receive the data. To facilitate this communication, we will install an MQTT Server on the Raspberry Pi controlling the 3D printer.
+MQTT (Message Queuing Telemetry Transport) is a lightweight protocol that lets Internet of Things (IoT) devices exchange messages. Here the power meter publishes measurements over MQTT at regular intervals, and Moonraker subscribes to receive them. You will install an MQTT server on the Raspberry Pi that controls the printer.
 
 ### Installation
 
-Please execute the following commands via SSH to complete the installation.
+Run the following commands over SSH.
 
 :::note
-The guide is using [Mosquitto](https://mosquitto.org/) as the MQTT server.
+This guide uses [Mosquitto](https://mosquitto.org/) as the MQTT server.
 :::
 
-1. Install the necessary software components by running the following command
+1. Install the software
 
    ```bash title="Installing the Mosquitto server"
    sudo apt install -y mosquitto mosquitto-clients
    ```
 
-1. Configure the Mosquitto MQTT server to automatically start on system boot
+1. Start Mosquitto automatically on boot
 
    ```bash title="Starting Mosquitto on printer startup"
    sudo systemctl enable mosquitto.service
@@ -43,60 +47,60 @@ The guide is using [Mosquitto](https://mosquitto.org/) as the MQTT server.
 
 ### Configuration
 
-To enable the MQTT server to receive messages from the power meter over the network, it is essential to configure the server to listen on a designated network port. The subsequent steps will guide you through the setup process for an unauthenticated (anonymous) connection, ensuring seamless communication between the power meter and the MQTT server.
+For the MQTT server to receive messages from the power meter, it must listen on a network port. The steps below set up an unauthenticated (anonymous) connection.
 
-:::danger[Important Security Note]
-If you plan to expose your 3D printer or Raspberry Pi to the public internet, it is crucial to implement an authenticated and encrypted connection to ensure secure communication. This guide does not cover authentication and encryption setup. Please refer to the Mosquitto documentation on [Authentication Methods](https://mosquitto.org/documentation/authentication-methods/) and [SSL/TLS Support](https://mosquitto.org/man/mosquitto-conf-5.html) for comprehensive instructions on configuring a secure connection. This will help protect your device and data from unauthorized access.
+:::danger[Security note]
+If you expose your 3D printer or Raspberry Pi to the public internet, use an authenticated and encrypted connection. This guide does not cover setting one up. See the Mosquitto documentation on [Authentication Methods](https://mosquitto.org/documentation/authentication-methods/) and [SSL/TLS Support](https://mosquitto.org/man/mosquitto-conf-5.html).
 :::
 
-1. Execute the following command to access and modify the configuration file
+1. Open the configuration file
 
    ```bash title="Editing the configuration file"
    sudo nano /etc/mosquitto/mosquitto.conf
    ```
 
-1. Append the following configuration settings to the end of the file
+1. Append these settings to the end of the file
 
    ```ini title="mosquitto.conf"
    listener 1883
    allow_anonymous true
    ```
 
-1. Exit the editor and save the file by pressing **CTRL-X**, then confirm with **Y** and **Enter**
-1. Apply the new configuration by restarting Mosquitto
+1. Save the file and exit the editor by pressing **CTRL-X**, then **Y**, then **Enter**
+1. Restart Mosquitto to apply the configuration
 
    ```bash title="Restarting the Mosquitto service"
    sudo systemctl restart mosquitto
    ```
 
-## Power Meter
+## Power meter
 
-Next, configure the power meter to publish measurements at regular intervals to the MQTT server, enabling data exchange and tracking.
+Next, configure the power meter to publish measurements to the MQTT server at regular intervals.
 
 ### Configuration
 
-1. Identify the IP address of your Raspberry Pi by executing the following command:
+1. Find the IP address of your Raspberry Pi:
 
    ```bash title="Determining the primary IP address"
    hostname -I
    ```
 
-   The resulting output should resemble the following:
+   The output looks like this:
 
    ```text title="Output"
    py@voron: $ hostname -I
    198.51.100.60 198.51.100.61 2600:1700:5430:87af::1106 2001:0db8:5dc9:b0ba:f8a8:7e3c:45e2:faab 2001:0db8:5dc9:b0ba:f8a8:7e3c:45e2:faac
    ```
 
-   Take note of the primary IP address, **198.51.100.60**, displayed in the first column of the output. This information is essential for the next steps, so please document it for later use.
+   Note the primary IP address, **198.51.100.60**, in the first column of the output. You need it in the next steps.
 
    :::note
-   Keep in mind that the actual output may vary due to differences in system settings and configurations.
+   Your output will differ depending on your system settings.
    :::
 
-1. Open a web browser and enter the IP address of your Shelly device to access its web-based interface and configure settings.
-1. Navigate to **Settings > MQTT** in the **Connectivity** section.
-1. Configure the following settings:
+1. Open the IP address of your Shelly device in a web browser to reach its web interface.
+1. Go to **Settings > MQTT** in the **Connectivity** section.
+1. Set the following:
     - **Enable**: Checked
     - **Connection type**: No SSL
     - **MQTT Prefix**: my-printer
@@ -107,21 +111,21 @@ Next, configure the power meter to publish measurements at regular intervals to 
     - **Username** and **Password**: Leave blank
 
    ![Shelly MQTT Settings](../../../../assets/guides/energy-usage-monitoring/shelly-mqtt-settings.png)
-1. Click **Save Settings** to apply the changes. A restart of the Shelly might be required.
+1. Click **Save Settings**. You might need to restart the Shelly.
 
 ## Moonraker
 
-Configure Moonraker to integrate additional sensor sources, enabling real-time data tracking in Mainsail and historical data analysis in the job history.
+Configure Moonraker to read the power meter as a sensor. Mainsail then shows live values, and the job history records them.
 
-### MQTT Configuration
+### MQTT configuration
 
-1. Execute the following command to access and modify the configuration file
+1. Open the configuration file
 
    ```bash title="Editing the Moonraker configuration file"
    sudo nano ~/printer_data/config/moonraker.conf
    ```
 
-1. Append the following configuration settings to the file to configure Moonraker to receive messages from the MQTT server
+1. Append these settings so Moonraker receives messages from the MQTT server
 
    ```ini title="moonraker.conf"
    [mqtt]
@@ -129,9 +133,9 @@ Configure Moonraker to integrate additional sensor sources, enabling real-time d
    enable_moonraker_api: False
    ```
 
-### Sensor Configuration
+### Sensor configuration
 
-1. Append the following configuration block to establish a sensor that subscribes to MQTT messages from the Shelly 1PM
+1. Append this block to define a sensor that subscribes to the MQTT messages from the Shelly 1PM
 
    ```ini title="moonraker.conf"
    [sensor powermeter]
@@ -154,54 +158,50 @@ Configure Moonraker to integrate additional sensor sources, enabling real-time d
      {set_result("energy", notification["aenergy"]["total"]|float / 1000)}
    ```
 
-   This configuration enables the extraction of key data points from Shelly 1PM status updates, including:
+   This extracts the following values from the Shelly 1PM status updates:
 
     - Current mains voltage
     - Current power draw
     - Current power usage
     - Total energy consumption (in kilowatt-hours)
 
-1. Apply the new configuration by restarting Moonraker
+1. Restart Moonraker to apply the configuration
 
-   ```bash title="Restarting the Mooraker service"
+   ```bash title="Restarting the Moonraker service"
    sudo systemctl restart moonraker
    ```
 
-1. Confirm Data Exchange
+1. Check that data arrives
 
-   To ensure the successful publication of measurements from the power meter and Moonraker's ability to process them, navigate to the Mainsail Web UI for your printer.
-
-   If the integration is functioning correctly, you should observe four new measurements from your sensor in the 'Miscellaneous Card' on the dashboard, as depicted in the screenshot below:
+   Open the Mainsail web UI for your printer. If the integration works, the 'Miscellaneous Card' on the dashboard shows four new measurements from your sensor, as in the screenshot below:
 
    ![Mainsail Sensor Data Display](../../../../assets/guides/energy-usage-monitoring/mainsail-sensor-data.png)
 
-   This verification step confirms the accurate exchange of data between the power meter and Moonraker, enabling real-time monitoring and analysis of energy consumption.
-
-   :::caution[Troubleshooting Data Exchange Issues]
-   If the expected data fails to appear in the Web UI, some troubleshooting will need to be performed.
+   :::caution[Troubleshooting data exchange]
+   If the data does not appear in the web UI, try the steps below.
 
    <details>
    <summary>Troubleshooting steps</summary>
 
-   1. Review the `moonraker.log` file for any configuration errors related to MQTT integration.
-   2. Confirm that the power meter is publishing data in the expected format. Utilize a tool like [MQTT Explorer](http://mqtt-explorer.com/) to connect to the MQTT server and verify real-time updates and message content.
+   1. Check `moonraker.log` for configuration errors related to MQTT.
+   2. Check that the power meter publishes data in the expected format. Use a tool like [MQTT Explorer](http://mqtt-explorer.com/) to connect to the MQTT server and inspect the messages.
 
    </details>
    :::
 
-### Historical Data
+### Historical data
 
-Moonraker allows tracking auxillary sensor data in the job history. To facilitate persisting this data additional history fields need to be configured for the sensor.
+Moonraker can record auxiliary sensor data in the job history. To store this data, add history fields to the sensor.
 
-1. Execute the following command to access and modify the Moonraker configuration file
+1. Open the Moonraker configuration file
 
    ```bash title="Editing the Moonraker configuration file"
    sudo nano ~/printer_data/config/moonraker.conf
    ```
 
-2. Enhance sensor definition with history fields
+2. Add history fields to the sensor definition
 
-   Append the following configuration lines to the previously defined sensor:
+   Append these lines to the sensor you defined earlier:
 
    ```ini title="moonraker.conf"
    history_field_energy_consumption:
@@ -246,25 +246,25 @@ Moonraker allows tracking auxillary sensor data in the job history. To facilitat
      report_maximum=false
    ```
 
-   This modification adds fields for current draw, power usage, and energy consumption, which will be recorded in the job history upon completion of a print job.
+   These add fields for current draw, power usage and energy consumption, which Moonraker records in the job history when a print finishes.
 
-3. Apply the new configuration by restarting Moonraker
+3. Restart Moonraker to apply the configuration
 
-   ```bash title="Restarting the Mooraker service"
+   ```bash title="Restarting the Moonraker service"
    sudo systemctl restart moonraker
    ```
 
-4. Verify data tracking in Mainsail
+4. Check the data in Mainsail
 
-   To confirm the successful integration of power meter measurements and Moonraker's job history, access the Mainsail Web UI for your printer. If the configuration has been completed correctly, you should see additional columns in the Job History section, as depicted in the screenshot below:
+   Open the Mainsail web UI for your printer. If the configuration is correct, the Job History section shows additional columns, as in the screenshot below:
 
    ![Mainsail Job History Display](../../../../assets/guides/energy-usage-monitoring/mainsail-job-history.png)
 
    :::note
-   The newly added fields will be blank for existing entries in the job history. As new print jobs are completed, these fields will be populated with the relevant data.
+   The new fields are blank for existing job history entries. They are filled in as new print jobs finish.
    :::
 
-## Further Reading
+## Further reading
 
 - Moonraker [sensor configuration](https://moonraker.readthedocs.io/en/latest/configuration/#sensor) documentation
 - Shelly [web interface guide](https://kb.shelly.cloud/knowledge-base/shelly-pro-1pm-web-interface-guide)
