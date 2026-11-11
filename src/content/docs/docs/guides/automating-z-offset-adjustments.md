@@ -5,31 +5,33 @@ description: "Perfect First Layers: Automating Z Offset Adjustments"
 
 ## Introduction
 
-Printing with diverse filament materials often necessitates Z offset adjustments for optimal bed adhesion and first layer squish. Manually executing these adjustments for each print job be inefficient and errors prone. This guide provides a comprehensive solution, detailing how to configure your Slicer to automatically incorporate necessary Z offset adjustments for each print job. Additionally, we will cover the modification of the `PRINT_END` macro to ensure the Z offset is reset to its default value upon print job completion, streamlining your printing process.
+Different filament materials often need different Z offsets for good bed adhesion and first layer squish. Adjusting the offset by hand for every print is slow and error prone. This guide shows how to configure your slicer to apply the Z offset automatically for each print. It also shows how to change the `PRINT_END` macro so the Z offset returns to its default when a print finishes.
 
 ## Prerequisites
 
-To utilize this guide, ensure you have the following:
+You need:
 
-- A 3D printer configured with Klipper firmware
-- A compatible Slicer software that supports filament-specific start G-code, such as:
+- A 3D printer running Klipper
+- A slicer that supports filament-specific start G-code, such as:
   - PrusaSlicer
   - SuperSlicer
   - OrcaSlicer
-- Enable "Advanced" settings in your Slicer software to access the necessary configuration options.
+- "Advanced" settings enabled in your slicer, to reach the configuration options used below.
 
-## Modifying the PRINT_END Macro
+## Modifying the PRINT_END macro
 
-The printer.cfg file should already contain a `PRINT_END` macro definition, as this is a standard configuration in Voron setups. If you require a template, refer to the callout section below. To modify the `PRINT_END` macro, append the following command to its end. If your macro utilizes the `SAVE_GCODE_STATE` and `RESTORE_GCODE_STATE` commands, ensure that the added command follows the `RESTORE_GCODE_STATE` command. This is crucial because `RESTORE_GCODE_STATE` also restores the saved G-code offset, which could result in incremental changes to the offset between print jobs, rather than resetting to the baseline offset.
+Your `printer.cfg` should already contain a `PRINT_END` macro, since it is part of the standard Voron configuration. If it does not, use the template in the callout below. Append the following command to the end of the macro:
 
 ```ini title="printer.cfg"
     SET_GCODE_OFFSET Z=0
 ```
 
-The `SET_GCODE_OFFSET` command effectively resets the positional offset on the Z-axis to zero, thereby ensuring that all subsequent G-Code commands will execute without any Z-axis offsets. This resets the baseline for Z-axis positioning, allowing subsequent print jobs to adjust from known starting point.
+If your macro uses `SAVE_GCODE_STATE` and `RESTORE_GCODE_STATE`, put the new command after `RESTORE_GCODE_STATE`. `RESTORE_GCODE_STATE` also restores the saved G-code offset, so a command placed before it is undone. The offset would then change a little with each print instead of returning to the baseline.
+
+`SET_GCODE_OFFSET Z=0` sets the Z offset to zero, so later G-code commands run without a Z offset. The next print starts from a known baseline.
 
 :::tip[No PRINT_END macro?]
-The `PRINT_END` macro should be part of your `printer.cfg` as it is an integral part of the stock Voron Klipper configuration. Check the code snippet below in case you don't have one defined yet.
+The stock Voron Klipper configuration includes a `PRINT_END` macro. If yours does not define one, use the snippet below.
 
 <details>
 <summary>Macro: PRINT_END</summary>
@@ -69,33 +71,33 @@ gcode:
 </details>
 :::
 
-## Configuring Filament Settings in Your Slicer
+## Configuring filament settings in your slicer
 
-This section uses PrusaSlicer as an example, but the process applies to other slicers as well.
+This section uses PrusaSlicer as an example. Other slicers work the same way.
 
-### Step 1: Access Custom G-Code
+### Step 1: Open custom G-code
 
-In your Slicer, navigate to Filament Settings and select the Custom G-code entry (highlighted in blue in the screenshot below).
+In your slicer, open Filament Settings and select the Custom G-code entry (highlighted in blue in the screenshot below).
 
-### Step 2: Add Start G-Code
+### Step 2: Add start G-code
 
 ```text title="Start G-Code"
 SET_GCODE_OFFSET Z_ADJUST=0.3
 ```
 
-![PrusSlicer Filament Settings](../../../../assets/guides/automatic-z-offset-ajustments/prusaslicer-filament-settings.png)
+![PrusaSlicer Filament Settings](../../../../assets/guides/automatic-z-offset-ajustments/prusaslicer-filament-settings.png)
 
-Note that the `SET_GCODE_OFFSET` command is utilized again, this time with the `Z_ADJUST` parameter, differing from the `Z` parameter used in the `PRINT_END` macro. The key distinction between these parameters is that `Z` sets the positional offset to the specified value, whereas `Z_ADJUST` modifies the existing offset by adding or subtracting the given value. For instance, executing `SET_GCODE_OFFSET Z=-0.2` followed by `SET_GCODE_OFFSET Z_ADJUST=0.3` results in a cumulative positional offset of **0.1** for the Z axis. This highlights the importance of resetting the offset post-print to maintain the correct Z offset.
+This uses `SET_GCODE_OFFSET` again, but with the `Z_ADJUST` parameter instead of the `Z` parameter used in `PRINT_END`. `Z` sets the offset to the given value. `Z_ADJUST` adds the given value to the current offset. For example, `SET_GCODE_OFFSET Z=-0.2` followed by `SET_GCODE_OFFSET Z_ADJUST=0.3` gives a Z offset of **0.1**. This is why the offset must be reset after each print.
 
-## Verification Process
+## Verification
 
-To confirm that the adjustments are being applied correctly, perform the following steps:
+To check that the adjustment is applied:
 
-1. Slice and initiate a new print job.
-2. Observe the Z offset adjustment during the print job preparation phase. If the configuration is correct, the WebUI displays the desired Z offset in the Toolhead card, as shown in the screenshot below:
+1. Slice and start a new print.
+2. Watch the Z offset while the printer prepares the print. If the configuration is correct, the web UI shows the expected Z offset in the Toolhead card, as in the screenshot below:
 
    ![Mainsail Toolhead Z-Offset](../../../../assets/guides/automatic-z-offset-ajustments/mainsail-toolhead-z-offset.png)
 
-## Further Reading
+## Further reading
 
 - Klipper [SET_GCODE_OFFSET](https://www.klipper3d.org/G-Codes.html#set_gcode_offset) documentation
