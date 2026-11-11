@@ -63,7 +63,7 @@ Clone the `pix` theme into a new `voron` theme rather than editing `pix` in plac
 
 Download the image as your regular user into `/tmp` first, rather than running `wget` under `sudo` directly against a system directory. A failed or partial download then never touches `/usr/share`. `sudo` only shows up for the final copy.
 
-The example below uses the gunmetal splash. Other colors are available from the same repository; see the table below.
+The example below uses the gunmetal splash. The same repository has other colors, listed in the table below.
 
 1. Download the image to a staging location:
 
@@ -185,7 +185,7 @@ To also turn the splash screen off entirely:
 sudo raspi-config nonint do_boot_splash 1
 ```
 
-The `voron` theme directory and the downloaded image are left in place; delete `/usr/share/plymouth/themes/voron` manually if you no longer want them.
+The `voron` theme directory and the downloaded image are left in place. Delete `/usr/share/plymouth/themes/voron` manually if you no longer want them.
 
 ## Troubleshooting
 
@@ -215,9 +215,9 @@ Confirm `disable_splash=1` is present in `config.txt`:
 grep disable_splash /boot/firmware/config.txt
 ```
 
-### Image looks stretched, cropped, or has black bars
+### Image looks stretched, cropped or has black bars
 
-The source images aren't guaranteed to match your display's exact resolution or aspect ratio. Plymouth scales the image to fit, which can distort or crop it on some displays. No universal fix for this: edit the PNG to match your screen's aspect ratio before copying it into the theme directory, or try a different attached display.
+The source images aren't guaranteed to match your display's exact resolution or aspect ratio. Plymouth scales the image to fit, which can distort or crop it on some displays. There is no universal fix. Edit the PNG to match your screen's aspect ratio before copying it into the theme directory, or try a different attached display.
 
 ### Initrd rebuild finishes but the splash doesn't change
 
@@ -231,7 +231,7 @@ Then reboot again.
 
 ## Further reading
 
-- [samwiseg0/misc_3dprinting: voron_rpi_bootscreen Images](https://github.com/samwiseg0/misc_3dprinting/tree/main/guides/voron_rpi_bootscreen/Images)
+- [voron_rpi_bootscreen Images in samwiseg0/misc_3dprinting](https://github.com/samwiseg0/misc_3dprinting/tree/main/guides/voron_rpi_bootscreen/Images)
 - [Raspberry Pi config.txt reference](https://www.raspberrypi.com/documentation/computers/config_txt.html)
 - [Raspberry Pi Configuration documentation](https://www.raspberrypi.com/documentation/computers/configuration.html)
 - [RPi-Distro/raspi-config source](https://github.com/RPi-Distro/raspi-config/blob/bookworm/raspi-config)
