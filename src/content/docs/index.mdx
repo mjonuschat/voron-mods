@@ -11,9 +11,9 @@ export const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 A collection of guides & tutorials for Voron 3D Printers
 
 <CardGrid>
-	<LinkCard title="Energy Usage Tracking" href={`${base}/docs/guides/energy-usage-monitoring-tracking/`} description="Step-by-step tutorial to integrate a network-connected power meter with Moonraker, enabling real-time energy consumption monitoring and historical data tracking." />
-	<LinkCard title="Optimized Bed Leveling Macros" href={`${base}/docs/guides/optimized-bed-leveling-macros/`} description="Guide to implementing a two-pass bed leveling approach, consisting of an initial coarse leveling pass for safety and speed, followed by a fine leveling pass for precise accuracy." />
-	<LinkCard title="Automating Z Offset Adjustments" href={`${base}/docs/guides/automating-z-offset-adjustments/`} description="Detailed step-by-step instructions to configure Z offset adjustments for each filament type in your Slicer software, suitable for all Klipper enabled printers." />
+	<LinkCard title="Energy Usage Tracking" href={`${base}/docs/guides/energy-usage-monitoring-tracking/`} description="Connect a network power meter to Moonraker to see live energy use and the energy each print job used." />
+	<LinkCard title="Optimized Bed Leveling Macros" href={`${base}/docs/guides/optimized-bed-leveling-macros/`} description="Level the bed with a fast, safe coarse pass followed by a fine pass for accuracy." />
+	<LinkCard title="Automating Z Offset Adjustments" href={`${base}/docs/guides/automating-z-offset-adjustments/`} description="Set a Z offset for each filament in your slicer, on any Klipper printer." />
 	<LinkCard title="Camera Streaming with go2rtc" href={`${base}/docs/guides/go2rtc-camera-streaming/`} description="Install go2rtc for a Klipper printer camera and configure a low-latency WebRTC stream in Mainsail and Fluidd." />
 	<LinkCard title="Custom Boot Splash Screen" href={`${base}/docs/guides/raspberry-pi-boot-splash-screen/`} description="Clone the Raspberry Pi Plymouth theme and swap in a custom Voron splash image, enabled automatically at boot." />
 </CardGrid>
